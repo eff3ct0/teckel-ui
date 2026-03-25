@@ -19,6 +19,7 @@ import "@xyflow/react/dist/style.css";
 
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { TeckelNodeRenderer } from "@/components/nodes/teckel-node";
 import { ContextMenu } from "@/components/canvas/context-menu";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
@@ -36,6 +37,7 @@ export function PipelineCanvas() {
   const addEdge = usePipelineStore((s) => s.addEdge);
   const selectNode = usePipelineStore((s) => s.selectNode);
   const openConfigPanel = useUIStore((s) => s.openConfigPanel);
+  const theme = useThemeStore((s) => s.theme);
 
   const [contextMenu, setContextMenu] = useState<{
     position: { x: number; y: number } | null;
@@ -138,6 +140,8 @@ export function PipelineCanvas() {
         }}
         edgesFocusable
         edgesReconnectable
+        style={{ backgroundColor: "var(--background)" }}
+        colorMode={theme}
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--canvas-dot)" />
         <Controls position="bottom-right" showInteractive={false} />
