@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
-import { Copy, Check, Pencil, Eye } from "lucide-react";
+import { Copy, Check, Pencil, Eye, GripHorizontal } from "lucide-react";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
   ssr: false,
@@ -15,12 +15,20 @@ const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.
   ),
 });
 
+const MIN_HEIGHT = 120;
+const MAX_HEIGHT = 800;
+const DEFAULT_HEIGHT = 240;
+
 export function YamlPanel() {
   const yaml = usePipelineStore((s) => s.yaml);
   const isOpen = useUIStore((s) => s.isYamlPanelOpen);
   const isEditable = useUIStore((s) => s.isYamlEditable);
   const setYamlEditable = useUIStore((s) => s.setYamlEditable);
   const [copied, setCopied] = useState(false);
+  const [height, setHeight] = useState(DEFAULT_HEIGHT);
+  const isDragging = useRef(false);
+  const startY = useRef(0);
+  const startHeight = useRef(0);
 
   const copyToClipboard = useCallback(async () => {
     await navigator.clipboard.writeText(yaml);
@@ -28,12 +36,53 @@ export function YamlPanel() {
     setTimeout(() => setCopied(false), 2000);
   }, [yaml]);
 
+  const onResizeStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isDragging.current = true;
+      startY.current = e.clientY;
+      startHeight.current = height;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        if (!isDragging.current) return;
+        const delta = startY.current - moveEvent.clientY;
+        const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startHeight.current + delta));
+        setHeight(newHeight);
+      };
+
+      const onMouseUp = () => {
+        isDragging.current = false;
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "row-resize";
+      document.body.style.userSelect = "none";
+    },
+    [height],
+  );
+
   if (!isOpen) return null;
 
   return (
-    <div className="flex h-[240px] shrink-0 flex-col border-t border-[var(--border)] bg-[var(--card)]">
+    <div
+      className="flex shrink-0 flex-col border-t border-[var(--border)] bg-[var(--card)]"
+      style={{ height }}
+    >
+      {/* Resize handle */}
+      <div
+        onMouseDown={onResizeStart}
+        className="group flex h-2 w-full cursor-row-resize items-center justify-center hover:bg-[var(--primary)]/10"
+      >
+        <GripHorizontal className="h-3 w-3 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2">
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-1.5">
         <span className="text-xs font-semibold text-[var(--muted-foreground)]">YAML Preview</span>
         <div className="flex items-center gap-1">
           <button
@@ -56,6 +105,7 @@ export function YamlPanel() {
           </button>
         </div>
       </div>
+
       {/* Editor */}
       <div className="flex-1 overflow-hidden">
         <MonacoEditor
