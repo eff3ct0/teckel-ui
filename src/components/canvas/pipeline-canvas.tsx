@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useState } from "react";
 import {
   ReactFlow,
   Background,
@@ -19,6 +19,7 @@ import "@xyflow/react/dist/style.css";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
 import { TeckelNodeRenderer } from "@/components/nodes/teckel-node";
+import { ContextMenu } from "@/components/canvas/context-menu";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import type { TeckelNode, TeckelEdge, TeckelNodeData } from "@/types/pipeline";
 
@@ -34,6 +35,11 @@ export function PipelineCanvas() {
   const addEdge = usePipelineStore((s) => s.addEdge);
   const selectNode = usePipelineStore((s) => s.selectNode);
   const openConfigPanel = useUIStore((s) => s.openConfigPanel);
+
+  const [contextMenu, setContextMenu] = useState<{
+    position: { x: number; y: number } | null;
+    nodeId: string | null;
+  }>({ position: null, nodeId: null });
 
   const onNodesChange: OnNodesChange<TeckelNode> = useCallback(
     (changes) => {
@@ -66,7 +72,31 @@ export function PipelineCanvas() {
 
   const onPaneClick = useCallback(() => {
     selectNode(null);
+    setContextMenu({ position: null, nodeId: null });
   }, [selectNode]);
+
+  const onNodeContextMenu: NodeMouseHandler<TeckelNode> = useCallback(
+    (event, node) => {
+      event.preventDefault();
+      selectNode(node.id);
+      setContextMenu({
+        position: { x: event.clientX, y: event.clientY },
+        nodeId: node.id,
+      });
+    },
+    [selectNode],
+  );
+
+  const onPaneContextMenu = useCallback(
+    (event: MouseEvent | React.MouseEvent) => {
+      event.preventDefault();
+      setContextMenu({
+        position: { x: event.clientX, y: event.clientY },
+        nodeId: null,
+      });
+    },
+    [],
+  );
 
   const miniMapNodeColor = useCallback((node: TeckelNode) => {
     const data = node.data as TeckelNodeData;
@@ -74,33 +104,42 @@ export function PipelineCanvas() {
   }, []);
 
   return (
-    <ReactFlow<TeckelNode, TeckelEdge>
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onNodeClick={onNodeClick}
-      onPaneClick={onPaneClick}
-      snapToGrid
-      snapGrid={[20, 20]}
-      fitView
-      proOptions={{ hideAttribution: true }}
-      defaultEdgeOptions={{
-        type: "smoothstep",
-        animated: true,
-        style: { stroke: "var(--muted-foreground)", strokeWidth: 1.5 },
-      }}
-    >
-      <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
-      <Controls position="bottom-right" showInteractive={false} />
-      <MiniMap
-        position="bottom-left"
-        nodeColor={miniMapNodeColor}
-        maskColor="rgba(0, 0, 0, 0.6)"
-        style={{ backgroundColor: "#18181b" }}
+    <>
+      <ReactFlow<TeckelNode, TeckelEdge>
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        onPaneClick={onPaneClick}
+        onNodeContextMenu={onNodeContextMenu}
+        onPaneContextMenu={onPaneContextMenu}
+        snapToGrid
+        snapGrid={[20, 20]}
+        fitView
+        proOptions={{ hideAttribution: true }}
+        defaultEdgeOptions={{
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: "var(--muted-foreground)", strokeWidth: 1.5 },
+        }}
+      >
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
+        <Controls position="bottom-right" showInteractive={false} />
+        <MiniMap
+          position="bottom-left"
+          nodeColor={miniMapNodeColor}
+          maskColor="rgba(0, 0, 0, 0.6)"
+          style={{ backgroundColor: "#18181b" }}
+        />
+      </ReactFlow>
+      <ContextMenu
+        position={contextMenu.position}
+        nodeId={contextMenu.nodeId}
+        onClose={() => setContextMenu({ position: null, nodeId: null })}
       />
-    </ReactFlow>
+    </>
   );
 }
