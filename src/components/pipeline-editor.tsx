@@ -10,10 +10,14 @@ import { YamlPanel } from "@/components/yaml/yaml-panel";
 import { useUIStore } from "@/stores/ui-store";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useYamlSync } from "@/hooks/use-yaml-sync";
+import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { useAutoSave } from "@/hooks/use-auto-save";
 import type { TeckelNodeType } from "@/types/pipeline";
 
 export function PipelineEditor() {
   useYamlSync();
+  useKeyboardShortcuts();
+  useAutoSave();
   const isPaletteOpen = useUIStore((s) => s.isPaletteOpen);
   const canvasRef = useRef<HTMLDivElement>(null);
   const addNode = usePipelineStore((s) => s.addNode);

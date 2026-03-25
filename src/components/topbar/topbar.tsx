@@ -4,6 +4,7 @@ import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
 import { useYamlImport } from "@/hooks/use-yaml-import";
 import { useYamlExport } from "@/hooks/use-yaml-export";
+import { useValidation } from "@/hooks/use-validation";
 import {
   Play,
   Save,
@@ -13,6 +14,9 @@ import {
   Undo2,
   Redo2,
   PanelLeft,
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 export function TopBar() {
@@ -28,6 +32,8 @@ export function TopBar() {
   const togglePalette = useUIStore((s) => s.togglePalette);
   const { importFromFile } = useYamlImport();
   const { exportToFile } = useYamlExport();
+  const { errorCount, warningCount } = useValidation();
+  const nodeCount = usePipelineStore((s) => s.nodes.length);
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-3">
@@ -51,24 +57,49 @@ export function TopBar() {
         )}
       </div>
 
-      {/* Center section - undo/redo */}
-      <div className="flex items-center gap-1">
-        <button
-          onClick={undo}
-          disabled={history.length === 0}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-30"
-          title="Undo (Ctrl+Z)"
-        >
-          <Undo2 className="h-4 w-4" />
-        </button>
-        <button
-          onClick={redo}
-          disabled={future.length === 0}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-30"
-          title="Redo (Ctrl+Shift+Z)"
-        >
-          <Redo2 className="h-4 w-4" />
-        </button>
+      {/* Center section - undo/redo + validation */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={undo}
+            disabled={history.length === 0}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-30"
+            title="Undo (Ctrl+Z)"
+          >
+            <Undo2 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={redo}
+            disabled={future.length === 0}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-30"
+            title="Redo (Ctrl+Shift+Z)"
+          >
+            <Redo2 className="h-4 w-4" />
+          </button>
+        </div>
+        {nodeCount > 0 && (
+          <>
+            <div className="h-5 w-px bg-[var(--border)]" />
+            <div className="flex items-center gap-1.5 text-[10px]">
+              {errorCount > 0 ? (
+                <span className="flex items-center gap-1 text-red-400">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {errorCount} {errorCount === 1 ? "error" : "errors"}
+                </span>
+              ) : warningCount > 0 ? (
+                <span className="flex items-center gap-1 text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {warningCount} {warningCount === 1 ? "warning" : "warnings"}
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 text-emerald-400">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Valid
+                </span>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Right section */}
