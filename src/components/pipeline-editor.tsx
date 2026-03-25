@@ -1,39 +1,73 @@
 "use client";
 
+import { useCallback, useRef } from "react";
+import { ReactFlowProvider } from "@xyflow/react";
+import { TopBar } from "@/components/topbar/topbar";
+import { NodePalette } from "@/components/palette/node-palette";
+import { PipelineCanvas } from "@/components/canvas/pipeline-canvas";
+import { ConfigPanel } from "@/components/config/config-panel";
+import { YamlPanel } from "@/components/yaml/yaml-panel";
+import { useUIStore } from "@/stores/ui-store";
+import { usePipelineStore } from "@/stores/pipeline-store";
+import type { TeckelNodeType } from "@/types/pipeline";
+
 export function PipelineEditor() {
+  const isPaletteOpen = useUIStore((s) => s.isPaletteOpen);
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const addNode = usePipelineStore((s) => s.addNode);
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      const type = e.dataTransfer.getData("application/teckel-node-type") as TeckelNodeType;
+      if (!type) return;
+
+      const bounds = canvasRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+
+      const position = {
+        x: e.clientX - bounds.left,
+        y: e.clientY - bounds.top,
+      };
+
+      addNode(type, position);
+    },
+    [addNode],
+  );
+
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)]">
-      {/* TopBar */}
-      <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-sm font-semibold text-[var(--foreground)]">Teckel UI</h1>
-          <span className="text-xs text-[var(--muted-foreground)]">Pipeline Editor</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-[var(--muted-foreground)]">No pipeline loaded</span>
-        </div>
-      </header>
+    <ReactFlowProvider>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-[var(--background)]">
+        <TopBar />
 
-      {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Node Palette - Left sidebar */}
-        <aside className="w-[200px] shrink-0 border-r border-[var(--border)] bg-[var(--card)]">
-          <div className="p-3">
-            <p className="text-xs font-medium uppercase tracking-wider text-[var(--muted-foreground)]">
-              Nodes
-            </p>
-          </div>
-        </aside>
+        <div className="flex flex-1 overflow-hidden">
+          {/* Node Palette - Left sidebar */}
+          {isPaletteOpen && <NodePalette />}
 
-        {/* Canvas - Center */}
-        <main className="flex flex-1 flex-col overflow-hidden">
-          <div className="flex-1 bg-[var(--background)]">
-            <div className="flex h-full items-center justify-center text-[var(--muted-foreground)]">
-              <p className="text-sm">Canvas — React Flow will render here</p>
+          {/* Canvas + YAML panel */}
+          <main className="flex flex-1 flex-col overflow-hidden">
+            <div
+              ref={canvasRef}
+              className="flex-1"
+              onDragOver={onDragOver}
+              onDrop={onDrop}
+            >
+              <PipelineCanvas />
             </div>
-          </div>
-        </main>
+
+            {/* YAML Preview - Bottom */}
+            <YamlPanel />
+          </main>
+
+          {/* Config Panel - Right sidebar */}
+          <ConfigPanel />
+        </div>
       </div>
-    </div>
+    </ReactFlowProvider>
   );
 }
