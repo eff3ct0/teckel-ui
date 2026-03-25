@@ -9,7 +9,7 @@ import type { TeckelNodeType } from "@/types/pipeline";
 
 export function NodePalette() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(["sources", "sinks", "transforms"]),
+    new Set(["sources", "sinks", "columns", "filtering", "aggregation", "joins-sets", "reshaping", "advanced"]),
   );
 
   const toggleCategory = (key: string) => {

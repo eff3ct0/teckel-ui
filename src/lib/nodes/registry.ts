@@ -55,7 +55,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   select: {
     type: "select",
     label: "Select",
-    category: "transforms",
+    category: "columns",
     color: "#3b82f6",
     icon: Columns3,
     defaultConfig: { columns: [] },
@@ -63,7 +63,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   where: {
     type: "where",
     label: "Where",
-    category: "transforms",
+    category: "filtering",
     color: "#f59e0b",
     icon: Filter,
     defaultConfig: { condition: "" },
@@ -71,7 +71,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   join: {
     type: "join",
     label: "Join",
-    category: "transforms",
+    category: "joins-sets",
     color: "#8b5cf6",
     icon: GitMerge,
     defaultConfig: { ref: "", on: "", joinType: "inner" },
@@ -79,7 +79,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   groupBy: {
     type: "groupBy",
     label: "Group By",
-    category: "transforms",
+    category: "aggregation",
     color: "#06b6d4",
     icon: Group,
     defaultConfig: { columns: [], agg: [] },
@@ -87,7 +87,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   orderBy: {
     type: "orderBy",
     label: "Order By",
-    category: "transforms",
+    category: "aggregation",
     color: "#f97316",
     icon: ArrowUpDown,
     defaultConfig: { columns: [] },
@@ -95,7 +95,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   sql: {
     type: "sql",
     label: "SQL",
-    category: "transforms",
+    category: "advanced",
     color: "#d946ef",
     icon: Code,
     defaultConfig: { query: "" },
@@ -103,7 +103,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   window: {
     type: "window",
     label: "Window",
-    category: "transforms",
+    category: "aggregation",
     color: "#14b8a6",
     icon: AppWindow,
     defaultConfig: { partitionBy: [], orderBy: [], frame: {} },
@@ -111,7 +111,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   union: {
     type: "union",
     label: "Union",
-    category: "transforms",
+    category: "joins-sets",
     color: "#84cc16",
     icon: Combine,
     defaultConfig: { refs: [] },
@@ -119,7 +119,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   intersect: {
     type: "intersect",
     label: "Intersect",
-    category: "transforms",
+    category: "joins-sets",
     color: "#0ea5e9",
     icon: CircleDot,
     defaultConfig: { refs: [] },
@@ -127,7 +127,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   except: {
     type: "except",
     label: "Except",
-    category: "transforms",
+    category: "joins-sets",
     color: "#ef4444",
     icon: Split,
     defaultConfig: { refs: [] },
@@ -135,7 +135,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   addColumns: {
     type: "addColumns",
     label: "Add Columns",
-    category: "transforms",
+    category: "columns",
     color: "#6366f1",
     icon: Plus,
     defaultConfig: { columns: [] },
@@ -143,7 +143,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   dropColumns: {
     type: "dropColumns",
     label: "Drop Columns",
-    category: "transforms",
+    category: "columns",
     color: "#ec4899",
     icon: Minus,
     defaultConfig: { columns: [] },
@@ -151,7 +151,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   renameColumns: {
     type: "renameColumns",
     label: "Rename Columns",
-    category: "transforms",
+    category: "columns",
     color: "#a855f7",
     icon: Replace,
     defaultConfig: { mapping: {} },
@@ -159,7 +159,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   castColumns: {
     type: "castColumns",
     label: "Cast Columns",
-    category: "transforms",
+    category: "columns",
     color: "#eab308",
     icon: CaseSensitive,
     defaultConfig: { mapping: {} },
@@ -167,7 +167,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   distinct: {
     type: "distinct",
     label: "Distinct",
-    category: "transforms",
+    category: "filtering",
     color: "#10b981",
     icon: Fingerprint,
     defaultConfig: {},
@@ -175,7 +175,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   limit: {
     type: "limit",
     label: "Limit",
-    category: "transforms",
+    category: "filtering",
     color: "#64748b",
     icon: Hash,
     defaultConfig: { count: 100 },
@@ -183,7 +183,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   sample: {
     type: "sample",
     label: "Sample",
-    category: "transforms",
+    category: "filtering",
     color: "#78716c",
     icon: Percent,
     defaultConfig: { fraction: 0.1, seed: null },
@@ -191,7 +191,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   pivot: {
     type: "pivot",
     label: "Pivot",
-    category: "transforms",
+    category: "reshaping",
     color: "#3b82f6",
     icon: RotateCcw,
     defaultConfig: { pivotColumn: "", values: [], agg: {} },
@@ -199,7 +199,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   unpivot: {
     type: "unpivot",
     label: "Unpivot",
-    category: "transforms",
+    category: "reshaping",
     color: "#8b5cf6",
     icon: RotateCw,
     defaultConfig: { idColumns: [], valueColumns: [] },
@@ -207,7 +207,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   repartition: {
     type: "repartition",
     label: "Repartition",
-    category: "transforms",
+    category: "advanced",
     color: "#6b7280",
     icon: Expand,
     defaultConfig: { numPartitions: 200 },
@@ -215,7 +215,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
   coalesce: {
     type: "coalesce",
     label: "Coalesce",
-    category: "transforms",
+    category: "advanced",
     color: "#52525b",
     icon: Shrink,
     defaultConfig: { numPartitions: 1 },
@@ -226,30 +226,33 @@ export const NODE_CATEGORIES: { key: NodeCategory; label: string; types: TeckelN
   { key: "sources", label: "Sources", types: ["input"] },
   { key: "sinks", label: "Sinks", types: ["output"] },
   {
-    key: "transforms",
-    label: "Transforms",
-    types: [
-      "select",
-      "where",
-      "join",
-      "groupBy",
-      "orderBy",
-      "sql",
-      "window",
-      "union",
-      "intersect",
-      "except",
-      "addColumns",
-      "dropColumns",
-      "renameColumns",
-      "castColumns",
-      "distinct",
-      "limit",
-      "sample",
-      "pivot",
-      "unpivot",
-      "repartition",
-      "coalesce",
-    ],
+    key: "columns",
+    label: "Columns",
+    types: ["addColumns", "castColumns", "dropColumns", "renameColumns", "select"],
+  },
+  {
+    key: "filtering",
+    label: "Filtering",
+    types: ["distinct", "limit", "sample", "where"],
+  },
+  {
+    key: "aggregation",
+    label: "Aggregation & Sorting",
+    types: ["groupBy", "orderBy", "window"],
+  },
+  {
+    key: "joins-sets",
+    label: "Joins & Sets",
+    types: ["except", "intersect", "join", "union"],
+  },
+  {
+    key: "reshaping",
+    label: "Reshaping",
+    types: ["pivot", "unpivot"],
+  },
+  {
+    key: "advanced",
+    label: "Advanced",
+    types: ["coalesce", "repartition", "sql"],
   },
 ];

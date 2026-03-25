@@ -28,7 +28,15 @@ export const TECKEL_NODE_TYPES = [
 
 export type TeckelNodeType = (typeof TECKEL_NODE_TYPES)[number];
 
-export type NodeCategory = "sources" | "sinks" | "transforms";
+export type NodeCategory =
+  | "sources"
+  | "sinks"
+  | "columns"
+  | "filtering"
+  | "aggregation"
+  | "joins-sets"
+  | "reshaping"
+  | "advanced";
 
 export interface TeckelNodeData extends Record<string, unknown> {
   label: string;
