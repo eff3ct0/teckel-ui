@@ -4,6 +4,7 @@ import { useCallback, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useThemeStore } from "@/stores/theme-store";
 import { Copy, Check, Pencil, Eye, GripHorizontal } from "lucide-react";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react").then((m) => m.default), {
@@ -22,6 +23,7 @@ const DEFAULT_HEIGHT = 240;
 export function YamlPanel() {
   const yaml = usePipelineStore((s) => s.yaml);
   const isOpen = useUIStore((s) => s.isYamlPanelOpen);
+  const currentTheme = useThemeStore((s) => s.theme);
   const isEditable = useUIStore((s) => s.isYamlEditable);
   const setYamlEditable = useUIStore((s) => s.setYamlEditable);
   const [copied, setCopied] = useState(false);
@@ -111,7 +113,7 @@ export function YamlPanel() {
         <MonacoEditor
           language="yaml"
           value={yaml || "# Pipeline YAML will appear here as you build your pipeline"}
-          theme="vs-dark"
+          theme={currentTheme === "dark" ? "vs-dark" : "light"}
           options={{
             readOnly: !isEditable,
             minimap: { enabled: false },

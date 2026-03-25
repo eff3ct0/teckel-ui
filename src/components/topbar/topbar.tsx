@@ -5,6 +5,7 @@ import { useUIStore } from "@/stores/ui-store";
 import { useYamlImport } from "@/hooks/use-yaml-import";
 import { useYamlExport } from "@/hooks/use-yaml-export";
 import { useValidation } from "@/hooks/use-validation";
+import { useThemeStore } from "@/stores/theme-store";
 import {
   Play,
   Save,
@@ -17,6 +18,8 @@ import {
   AlertCircle,
   AlertTriangle,
   CheckCircle2,
+  Sun,
+  Moon,
 } from "lucide-react";
 
 export function TopBar() {
@@ -32,6 +35,8 @@ export function TopBar() {
   const togglePalette = useUIStore((s) => s.togglePalette);
   const { importFromFile } = useYamlImport();
   const { exportToFile } = useYamlExport();
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const { errorCount, warningCount } = useValidation();
   const nodeCount = usePipelineStore((s) => s.nodes.length);
 
@@ -137,6 +142,14 @@ export function TopBar() {
         >
           <Save className="h-4 w-4" />
         </button>
+        <button
+          onClick={toggleTheme}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          title={`Switch to ${theme === "dark" ? "light" : "dark"} theme`}
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+        <div className="mx-1 h-5 w-px bg-[var(--border)]" />
         <button
           className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
           title="Run pipeline"

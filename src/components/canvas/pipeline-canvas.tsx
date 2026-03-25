@@ -139,13 +139,13 @@ export function PipelineCanvas() {
         edgesFocusable
         edgesReconnectable
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--canvas-dot)" />
         <Controls position="bottom-right" showInteractive={false} />
         <MiniMap
           position="bottom-left"
           nodeColor={miniMapNodeColor}
-          maskColor="rgba(0, 0, 0, 0.6)"
-          style={{ backgroundColor: "#18181b" }}
+          maskColor="var(--minimap-mask)"
+          style={{ backgroundColor: "var(--minimap-bg)" }}
         />
       </ReactFlow>
       <ContextMenu

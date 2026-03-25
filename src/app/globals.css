@@ -7,6 +7,7 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+/* ── Dark theme (default) ─────────────────────────────── */
 :root {
   --background: #09090b;
   --foreground: #fafafa;
@@ -28,6 +29,35 @@
   --input: #27272a;
   --ring: #3b82f6;
   --radius: 0.75rem;
+  --canvas-dot: #27272a;
+  --minimap-bg: #18181b;
+  --minimap-mask: rgba(0, 0, 0, 0.6);
+}
+
+/* ── Light theme ──────────────────────────────────────── */
+.light {
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #2563eb;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #2563eb;
+  --canvas-dot: #d4d4d8;
+  --minimap-bg: #ffffff;
+  --minimap-mask: rgba(255, 255, 255, 0.7);
 }
 
 body {
@@ -36,13 +66,13 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
-/* React Flow overrides for dark theme */
+/* ── React Flow overrides ─────────────────────────────── */
 .react-flow__background {
   background-color: var(--background) !important;
 }
 
 .react-flow__minimap {
-  background-color: var(--card) !important;
+  background-color: var(--minimap-bg) !important;
   border: 1px solid var(--border) !important;
   border-radius: 8px !important;
 }
@@ -63,25 +93,37 @@ body {
   background-color: var(--secondary) !important;
 }
 
-/* Edge selection styling */
-.react-flow__edge.selected .react-flow__edge-path,
-.react-flow__edge:focus .react-flow__edge-path {
-  stroke: var(--primary) !important;
+/* Edge default transition */
+.react-flow__edge-path {
+  transition: stroke 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;
+}
+
+/* Edge hover */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: var(--foreground) !important;
   stroke-width: 2.5 !important;
 }
 
-.react-flow__edge:hover .react-flow__edge-path {
-  stroke: var(--foreground) !important;
-  stroke-width: 2 !important;
+/* Edge selected — bright highlight + glow */
+.react-flow__edge.selected .react-flow__edge-path,
+.react-flow__edge:focus .react-flow__edge-path {
+  stroke: var(--primary) !important;
+  stroke-width: 3 !important;
+  filter: drop-shadow(0 0 6px var(--primary)) drop-shadow(0 0 2px var(--primary));
+  animation: none !important;
 }
 
 .react-flow__edge-interaction {
   cursor: pointer;
+  stroke-width: 24px !important;
 }
 
 /* Handle hover styling */
+.react-flow__handle {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
 .react-flow__handle:hover {
   background-color: var(--primary) !important;
-  transform: scale(1.3);
-  transition: all 0.15s ease;
+  transform: scale(1.4);
 }
