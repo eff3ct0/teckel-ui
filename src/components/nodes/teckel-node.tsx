@@ -47,18 +47,21 @@ function TeckelNodeComponent({ id, data, selected }: NodeProps<TeckelFlowNode>) 
         </div>
       </div>
 
-      {/* Handles */}
+      {/* Target handle — all nodes except Input can receive connections (N inputs) */}
       {data.teckelType !== "input" && (
         <Handle
           type="target"
           position={Position.Left}
+          isConnectable
           className="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[var(--card)] !bg-[var(--muted-foreground)]"
         />
       )}
+      {/* Source handle — all nodes except Output can send connections (N outputs) */}
       {data.teckelType !== "output" && (
         <Handle
           type="source"
           position={Position.Right}
+          isConnectable
           className="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[var(--card)] !bg-[var(--muted-foreground)]"
         />
       )}

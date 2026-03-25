@@ -71,25 +71,38 @@ function topologicalSort(nodes: TeckelNode[], edges: TeckelEdge[]): TeckelNode[]
 }
 
 /**
- * Find the "from" reference for a node — the ref of its source node (incoming edge).
+ * Find all "from" references for a node — the refs of all source nodes (incoming edges).
+ */
+function getAllFromRefs(
+  nodeId: string,
+  edges: TeckelEdge[],
+  nodeMap: Map<string, TeckelNode>,
+): string[] {
+  return edges
+    .filter((e) => e.target === nodeId)
+    .map((e) => nodeMap.get(e.source)?.data.ref)
+    .filter((ref): ref is string => !!ref);
+}
+
+/**
+ * Find the primary "from" reference (first incoming edge).
  */
 function getFromRef(
   nodeId: string,
   edges: TeckelEdge[],
   nodeMap: Map<string, TeckelNode>,
 ): string | undefined {
-  const incomingEdge = edges.find((e) => e.target === nodeId);
-  if (!incomingEdge) return undefined;
-  const sourceNode = nodeMap.get(incomingEdge.source);
-  return sourceNode?.data.ref;
+  return getAllFromRefs(nodeId, edges, nodeMap)[0];
 }
 
 /**
  * Map a node type and its config to the Teckel YAML transformation format.
+ * Receives all incoming refs to support N-input transforms.
  */
 function buildTransformation(
   node: TeckelNode,
   fromRef: string | undefined,
+  allFromRefs: string[],
   edges: TeckelEdge[],
   nodeMap: Map<string, TeckelNode>,
 ): TeckelTransformation | null {
@@ -111,15 +124,21 @@ function buildTransformation(
         filter: (config.condition as string) || "",
       },
     }),
-    join: () => ({
-      name: node.data.ref,
-      join: {
-        from: fromRef,
-        with: (config.ref as string) || "",
-        on: (config.on as string) || "",
-        type: (config.joinType as string) || "inner",
-      },
-    }),
+    join: () => {
+      // Join uses first incoming edge as "from" and remaining as "with"
+      const others = allFromRefs.slice(1);
+      const configRef = config.ref as string;
+      const withRefs = others.length > 0 ? others : configRef ? [configRef] : [];
+      return {
+        name: node.data.ref,
+        join: {
+          from: fromRef,
+          with: withRefs.length === 1 ? withRefs[0] : withRefs,
+          on: (config.on as string) || "",
+          type: (config.joinType as string) || "inner",
+        },
+      };
+    },
     groupBy: () => ({
       name: node.data.ref,
       group: {
@@ -156,27 +175,30 @@ function buildTransformation(
         orderBy: (config.orderBy as string[]) || [],
       },
     }),
-    union: () => ({
-      name: node.data.ref,
-      union: {
-        from: fromRef,
-        refs: (config.refs as string[]) || [],
-      },
-    }),
-    intersect: () => ({
-      name: node.data.ref,
-      intersect: {
-        from: fromRef,
-        refs: (config.refs as string[]) || [],
-      },
-    }),
-    except: () => ({
-      name: node.data.ref,
-      except: {
-        from: fromRef,
-        refs: (config.refs as string[]) || [],
-      },
-    }),
+    union: () => {
+      // Union merges all incoming edges as sources
+      const sources = allFromRefs.length > 0 ? allFromRefs : (config.refs as string[]) || [];
+      return {
+        name: node.data.ref,
+        union: { sources },
+      };
+    },
+    intersect: () => {
+      const sources = allFromRefs.length > 0 ? allFromRefs : (config.refs as string[]) || [];
+      return {
+        name: node.data.ref,
+        intersect: { sources },
+      };
+    },
+    except: () => {
+      // Except: first incoming is "left", second is "right"
+      const left = allFromRefs[0] || (config.refs as string[])?.[0] || "";
+      const right = allFromRefs[1] || (config.refs as string[])?.[1] || "";
+      return {
+        name: node.data.ref,
+        except: { left, right },
+      };
+    },
     addColumns: () => ({
       name: node.data.ref,
       addColumns: {
@@ -314,8 +336,9 @@ export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
       }
       outputs.push(output);
     } else {
-      const fromRef = getFromRef(node.id, edges, nodeMap);
-      const transformation = buildTransformation(node, fromRef, edges, nodeMap);
+      const allFromRefs = getAllFromRefs(node.id, edges, nodeMap);
+      const fromRef = allFromRefs[0];
+      const transformation = buildTransformation(node, fromRef, allFromRefs, edges, nodeMap);
       if (transformation) {
         transformations.push(transformation);
       }

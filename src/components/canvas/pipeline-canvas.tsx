@@ -11,6 +11,7 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type NodeMouseHandler,
+  type EdgeMouseHandler,
   applyNodeChanges,
   applyEdgeChanges,
 } from "@xyflow/react";
@@ -57,7 +58,15 @@ export function PipelineCanvas() {
 
   const onConnect: OnConnect = useCallback(
     (connection) => {
-      addEdge(connection);
+      // Prevent duplicate edges between the same source-target pair
+      const exists = usePipelineStore
+        .getState()
+        .edges.some(
+          (e) => e.source === connection.source && e.target === connection.target,
+        );
+      if (!exists) {
+        addEdge(connection);
+      }
     },
     [addEdge],
   );
@@ -119,12 +128,16 @@ export function PipelineCanvas() {
         snapToGrid
         snapGrid={[20, 20]}
         fitView
+        deleteKeyCode={["Backspace", "Delete"]}
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "smoothstep",
           animated: true,
+          interactionWidth: 20,
           style: { stroke: "var(--muted-foreground)", strokeWidth: 1.5 },
         }}
+        edgesFocusable
+        edgesReconnectable
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#27272a" />
         <Controls position="bottom-right" showInteractive={false} />
