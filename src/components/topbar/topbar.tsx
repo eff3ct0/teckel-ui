@@ -2,6 +2,8 @@
 
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useYamlImport } from "@/hooks/use-yaml-import";
+import { useYamlExport } from "@/hooks/use-yaml-export";
 import {
   Play,
   Save,
@@ -24,7 +26,8 @@ export function TopBar() {
   const toggleYamlPanel = useUIStore((s) => s.toggleYamlPanel);
   const isYamlPanelOpen = useUIStore((s) => s.isYamlPanelOpen);
   const togglePalette = useUIStore((s) => s.togglePalette);
-  const isPaletteOpen = useUIStore((s) => s.isPaletteOpen);
+  const { importFromFile } = useYamlImport();
+  const { exportToFile } = useYamlExport();
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-3">
@@ -84,12 +87,14 @@ export function TopBar() {
         </button>
         <div className="mx-1 h-5 w-px bg-[var(--border)]" />
         <button
+          onClick={importFromFile}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
           title="Import YAML"
         >
           <FileUp className="h-4 w-4" />
         </button>
         <button
+          onClick={exportToFile}
           className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
           title="Export YAML"
         >

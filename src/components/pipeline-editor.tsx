@@ -9,9 +9,11 @@ import { ConfigPanel } from "@/components/config/config-panel";
 import { YamlPanel } from "@/components/yaml/yaml-panel";
 import { useUIStore } from "@/stores/ui-store";
 import { usePipelineStore } from "@/stores/pipeline-store";
+import { useYamlSync } from "@/hooks/use-yaml-sync";
 import type { TeckelNodeType } from "@/types/pipeline";
 
 export function PipelineEditor() {
+  useYamlSync();
   const isPaletteOpen = useUIStore((s) => s.isPaletteOpen);
   const canvasRef = useRef<HTMLDivElement>(null);
   const addNode = usePipelineStore((s) => s.addNode);
