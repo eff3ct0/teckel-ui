@@ -157,17 +157,17 @@ body {
   border-radius: 50%;
 }
 
-/* Hover: grow + turn blue + glow */
+/* Hover: grow + turn blue + glow (preserve translate centering) */
 .react-flow__handle.teckel-handle:hover {
   background-color: var(--primary) !important;
-  transform: scale(1.5);
+  transform: translate(-50%, -50%) scale(1.5);
   box-shadow: 0 0 8px var(--primary), 0 0 3px var(--primary);
 }
 
-/* While connecting (dragging a new edge) — pulse the target handles */
+/* While connecting (dragging a new edge) — highlight target handles */
 .react-flow__handle.connectingto,
 .react-flow__handle.valid {
   background-color: var(--primary) !important;
-  transform: scale(1.4);
+  transform: translate(-50%, -50%) scale(1.4);
   box-shadow: 0 0 8px var(--primary);
 }
