@@ -3,10 +3,11 @@
 import { useMemo } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useUIStore } from "@/stores/ui-store";
+import { useResize } from "@/hooks/use-resize";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import { NODE_SCHEMAS } from "@/lib/nodes/schemas";
 import { NodeConfigForm } from "@/components/config/node-forms";
-import { X, AlertCircle } from "lucide-react";
+import { X, AlertCircle, GripVertical } from "lucide-react";
 
 export function ConfigPanel() {
   const selectedNodeId = usePipelineStore((s) => s.selectedNodeId);
@@ -17,6 +18,12 @@ export function ConfigPanel() {
   const saveSnapshot = usePipelineStore((s) => s.saveSnapshot);
   const isOpen = useUIStore((s) => s.isConfigPanelOpen);
   const close = useUIStore((s) => s.closeConfigPanel);
+  const { width, onResizeStart } = useResize({
+    initialWidth: 360,
+    minWidth: 260,
+    maxWidth: 600,
+    direction: "right",
+  });
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
@@ -34,7 +41,15 @@ export function ConfigPanel() {
   const Icon = def.icon;
 
   return (
-    <aside className="flex h-full w-[360px] shrink-0 flex-col border-l border-[var(--border)] bg-[var(--card)]">
+    <aside className="flex h-full shrink-0" style={{ width }}>
+      {/* Resize handle */}
+      <div
+        onMouseDown={onResizeStart}
+        className="group flex w-2 cursor-col-resize items-center justify-center hover:bg-[var(--primary)]/10"
+      >
+        <GripVertical className="h-4 w-4 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+      <div className="flex flex-1 flex-col border-l border-[var(--border)] bg-[var(--card)]">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
         <div className="flex items-center gap-2">
@@ -108,6 +123,7 @@ export function ConfigPanel() {
             </ul>
           </div>
         )}
+      </div>
       </div>
     </aside>
   );
