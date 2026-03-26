@@ -315,7 +315,7 @@ function GroupByForm({ config, onChange }: FormProps) {
               <button
                 type="button"
                 onClick={() => removeAgg(i)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -465,7 +465,7 @@ function AddColumnsForm({ config, onChange }: FormProps) {
               <button
                 type="button"
                 onClick={() => removeCol(i)}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
               >
                 <X className="h-3 w-3" />
               </button>
