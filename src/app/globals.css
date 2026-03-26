@@ -113,6 +113,19 @@ body {
   background-color: var(--secondary) !important;
 }
 
+/* Selection box */
+.react-flow__selection {
+  background: rgba(59, 130, 246, 0.08) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+  border-radius: 4px !important;
+}
+
+.react-flow__nodesselection-rect {
+  background: rgba(59, 130, 246, 0.06) !important;
+  border: 1px dashed rgba(59, 130, 246, 0.5) !important;
+  border-radius: 6px !important;
+}
+
 /* Edge default transition */
 .react-flow__edge-path {
   transition: stroke 0.15s ease, stroke-width 0.15s ease, filter 0.15s ease;

@@ -7,6 +7,7 @@ import {
   BackgroundVariant,
   Controls,
   MiniMap,
+  SelectionMode,
   type OnConnect,
   type OnNodesChange,
   type OnEdgesChange,
@@ -131,6 +132,10 @@ export function PipelineCanvas() {
         snapGrid={[20, 20]}
         fitView
         deleteKeyCode={["Backspace", "Delete"]}
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        panOnDrag={[1, 2]}
+        panOnScroll
         proOptions={{ hideAttribution: true }}
         defaultEdgeOptions={{
           type: "smoothstep",
