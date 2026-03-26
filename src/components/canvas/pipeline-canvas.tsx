@@ -12,7 +12,6 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
   type NodeMouseHandler,
-  type EdgeMouseHandler,
   applyNodeChanges,
   applyEdgeChanges,
 } from "@xyflow/react";
@@ -37,6 +36,7 @@ export function PipelineCanvas() {
   const setEdges = usePipelineStore((s) => s.setEdges);
   const addEdge = usePipelineStore((s) => s.addEdge);
   const selectNode = usePipelineStore((s) => s.selectNode);
+  const saveSnapshot = usePipelineStore((s) => s.saveSnapshot);
   const openConfigPanel = useUIStore((s) => s.openConfigPanel);
   const theme = useThemeStore((s) => s.theme);
 
@@ -47,21 +47,33 @@ export function PipelineCanvas() {
 
   const onNodesChange: OnNodesChange<TeckelNode> = useCallback(
     (changes) => {
+      // Save snapshot before React Flow removes nodes (delete key)
+      const hasRemove = changes.some((c) => c.type === "remove");
+      if (hasRemove) saveSnapshot();
+
       setNodes(applyNodeChanges(changes, nodes));
     },
-    [nodes, setNodes],
+    [nodes, setNodes, saveSnapshot],
   );
 
   const onEdgesChange: OnEdgesChange<TeckelEdge> = useCallback(
     (changes) => {
+      // Save snapshot before React Flow removes edges (delete key)
+      const hasRemove = changes.some((c) => c.type === "remove");
+      if (hasRemove) saveSnapshot();
+
       setEdges(applyEdgeChanges(changes, edges));
     },
-    [edges, setEdges],
+    [edges, setEdges, saveSnapshot],
   );
+
+  // Save snapshot when drag starts so the move is undoable
+  const onNodeDragStart = useCallback(() => {
+    saveSnapshot();
+  }, [saveSnapshot]);
 
   const onConnect: OnConnect = useCallback(
     (connection) => {
-      // Prevent duplicate edges between the same source-target pair
       const exists = usePipelineStore
         .getState()
         .edges.some(
@@ -125,6 +137,7 @@ export function PipelineCanvas() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onNodeDragStart={onNodeDragStart}
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         onPaneContextMenu={onPaneContextMenu}

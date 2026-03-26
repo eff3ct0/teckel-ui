@@ -14,6 +14,7 @@ export function ConfigPanel() {
   const updateNodeConfig = usePipelineStore((s) => s.updateNodeConfig);
   const updateNodeRef = usePipelineStore((s) => s.updateNodeRef);
   const removeNodes = usePipelineStore((s) => s.removeNodes);
+  const saveSnapshot = usePipelineStore((s) => s.saveSnapshot);
   const isOpen = useUIStore((s) => s.isConfigPanelOpen);
   const close = useUIStore((s) => s.closeConfigPanel);
 
@@ -73,6 +74,7 @@ export function ConfigPanel() {
           </label>
           <input
             value={selectedNode.data.ref}
+            onFocus={saveSnapshot}
             onChange={(e) => updateNodeRef(selectedNode.id, e.target.value)}
             className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2.5 font-mono text-xs text-[var(--foreground)] transition-colors focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
             placeholder="asset_ref"
@@ -87,6 +89,7 @@ export function ConfigPanel() {
           config={selectedNode.data.config}
           onChange={(config) => updateNodeConfig(selectedNode.id, config)}
           nodeId={selectedNode.id}
+          onBeforeChange={saveSnapshot}
         />
 
         {/* Validation errors */}

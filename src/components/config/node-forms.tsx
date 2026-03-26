@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useCallback } from "react";
 import type { TeckelNodeType } from "@/types/pipeline";
 import { TagInput } from "@/components/shared/tag-input";
 import { KeyValueEditor } from "@/components/shared/key-value-editor";
@@ -692,12 +693,34 @@ export function NodeConfigForm({
   config,
   onChange,
   nodeId,
+  onBeforeChange,
 }: {
   nodeType: TeckelNodeType;
   config: Record<string, unknown>;
   onChange: (partial: Record<string, unknown>) => void;
   nodeId: string;
+  onBeforeChange?: () => void;
 }) {
   const Form = FORM_MAP[nodeType];
-  return <Form config={config} onChange={onChange} nodeId={nodeId} />;
+  const hasFocused = useRef(false);
+
+  const handleFocus = useCallback(() => {
+    if (!hasFocused.current && onBeforeChange) {
+      hasFocused.current = true;
+      onBeforeChange();
+    }
+  }, [onBeforeChange]);
+
+  const handleBlur = useCallback((e: React.FocusEvent<HTMLDivElement>) => {
+    // Reset when focus leaves the entire form (not just moving between fields)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      hasFocused.current = false;
+    }
+  }, []);
+
+  return (
+    <div onFocusCapture={handleFocus} onBlur={handleBlur}>
+      <Form config={config} onChange={onChange} nodeId={nodeId} />
+    </div>
+  );
 }

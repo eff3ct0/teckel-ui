@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { nanoid } from "@/lib/utils/id";
-import type { TeckelNode, TeckelEdge, TeckelNodeType, TeckelNodeData } from "@/types/pipeline";
+import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import type { XYPosition, Connection } from "@xyflow/react";
 
@@ -12,7 +12,6 @@ interface HistoryEntry {
 }
 
 interface PipelineState {
-  // Pipeline data
   id: string;
   name: string;
   nodes: TeckelNode[];
@@ -21,11 +20,12 @@ interface PipelineState {
   yaml: string;
   isDirty: boolean;
 
-  // History
   history: HistoryEntry[];
   future: HistoryEntry[];
 
-  // Actions
+  // Save a snapshot to history (call before a destructive/meaningful change)
+  saveSnapshot: () => void;
+
   addNode: (type: TeckelNodeType, position: XYPosition) => void;
   removeNodes: (nodeIds: string[]) => void;
   updateNodeConfig: (nodeId: string, config: Record<string, unknown>) => void;
@@ -42,17 +42,6 @@ interface PipelineState {
   reset: () => void;
 }
 
-function pushHistory(state: PipelineState): Pick<PipelineState, "history" | "future" | "isDirty"> {
-  return {
-    history: [
-      ...state.history.slice(-49),
-      { nodes: state.nodes, edges: state.edges },
-    ],
-    future: [],
-    isDirty: true,
-  };
-}
-
 export const usePipelineStore = create<PipelineState>((set, get) => ({
   id: nanoid(),
   name: "Untitled Pipeline",
@@ -63,6 +52,15 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   isDirty: false,
   history: [],
   future: [],
+
+  // Explicitly save a snapshot — call this before a change you want to be undoable
+  saveSnapshot: () => {
+    const { nodes, edges, history } = get();
+    set({
+      history: [...history.slice(-49), { nodes, edges }],
+      future: [],
+    });
+  },
 
   addNode: (type, position) => {
     const def = NODE_REGISTRY[type];
@@ -80,29 +78,34 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
         validationErrors: [],
       },
     };
-    set((state) => ({
-      ...pushHistory(state),
-      nodes: [...state.nodes, newNode],
-    }));
+    const { nodes, edges, history } = get();
+    set({
+      history: [...history.slice(-49), { nodes, edges }],
+      future: [],
+      isDirty: true,
+      nodes: [...nodes, newNode],
+    });
   },
 
   removeNodes: (nodeIds) => {
-    set((state) => ({
-      ...pushHistory(state),
-      nodes: state.nodes.filter((n) => !nodeIds.includes(n.id)),
-      edges: state.edges.filter(
+    const { nodes, edges, history, selectedNodeId } = get();
+    set({
+      history: [...history.slice(-49), { nodes, edges }],
+      future: [],
+      isDirty: true,
+      nodes: nodes.filter((n) => !nodeIds.includes(n.id)),
+      edges: edges.filter(
         (e) => !nodeIds.includes(e.source) && !nodeIds.includes(e.target),
       ),
       selectedNodeId:
-        state.selectedNodeId && nodeIds.includes(state.selectedNodeId)
-          ? null
-          : state.selectedNodeId,
-    }));
+        selectedNodeId && nodeIds.includes(selectedNodeId) ? null : selectedNodeId,
+    });
   },
 
+  // Config/ref updates don't push history — the caller should saveSnapshot once before a batch
   updateNodeConfig: (nodeId, config) => {
     set((state) => ({
-      ...pushHistory(state),
+      isDirty: true,
       nodes: state.nodes.map((n) =>
         n.id === nodeId
           ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } }
@@ -113,7 +116,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
 
   updateNodeRef: (nodeId, ref) => {
     set((state) => ({
-      ...pushHistory(state),
+      isDirty: true,
       nodes: state.nodes.map((n) =>
         n.id === nodeId ? { ...n, data: { ...n.data, ref } } : n,
       ),
@@ -129,27 +132,32 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       sourceHandle: connection.sourceHandle ?? undefined,
       targetHandle: connection.targetHandle ?? undefined,
     };
-    set((state) => ({
-      ...pushHistory(state),
-      edges: [...state.edges, newEdge],
-    }));
+    const { nodes, edges, history } = get();
+    set({
+      history: [...history.slice(-49), { nodes, edges }],
+      future: [],
+      isDirty: true,
+      edges: [...edges, newEdge],
+    });
   },
 
   removeEdges: (edgeIds) => {
-    set((state) => ({
-      ...pushHistory(state),
-      edges: state.edges.filter((e) => !edgeIds.includes(e.id)),
-    }));
+    const { nodes, edges, history } = get();
+    set({
+      history: [...history.slice(-49), { nodes, edges }],
+      future: [],
+      isDirty: true,
+      edges: edges.filter((e) => !edgeIds.includes(e.id)),
+    });
   },
 
   selectNode: (nodeId) => set({ selectedNodeId: nodeId }),
 
+  // setNodes/setEdges: no history push — used for continuous updates (drag, React Flow internals)
   setNodes: (nodes) => set({ nodes, isDirty: true }),
-
   setEdges: (edges) => set({ edges, isDirty: true }),
 
   setName: (name) => set({ name, isDirty: true }),
-
   setYaml: (yaml) => set({ yaml }),
 
   undo: () => {
@@ -160,7 +168,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       nodes: prev.nodes,
       edges: prev.edges,
       history: history.slice(0, -1),
-      future: [{ nodes, edges }, ...future],
+      future: [{ nodes, edges }, ...future.slice(0, 49)],
       isDirty: true,
     });
   },

@@ -6,6 +6,7 @@ import { useYamlImport } from "@/hooks/use-yaml-import";
 import { useYamlExport } from "@/hooks/use-yaml-export";
 import { useValidation } from "@/hooks/use-validation";
 import { useThemeStore } from "@/stores/theme-store";
+import { autoLayout } from "@/lib/layout/auto-layout";
 import {
   Play,
   Save,
@@ -20,6 +21,7 @@ import {
   CheckCircle2,
   Sun,
   Moon,
+  LayoutDashboard,
 } from "lucide-react";
 
 export function TopBar() {
@@ -35,6 +37,16 @@ export function TopBar() {
   const togglePalette = useUIStore((s) => s.togglePalette);
   const { importFromFile } = useYamlImport();
   const { exportToFile } = useYamlExport();
+  const nodes = usePipelineStore((s) => s.nodes);
+  const edges = usePipelineStore((s) => s.edges);
+  const setNodes = usePipelineStore((s) => s.setNodes);
+  const saveSnapshot = usePipelineStore((s) => s.saveSnapshot);
+
+  const handleAutoLayout = () => {
+    if (nodes.length === 0) return;
+    saveSnapshot();
+    setNodes(autoLayout(nodes, edges));
+  };
   const theme = useThemeStore((s) => s.theme);
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const { errorCount, warningCount } = useValidation();
@@ -80,6 +92,14 @@ export function TopBar() {
             title="Redo (Ctrl+Shift+Z)"
           >
             <Redo2 className="h-4 w-4" />
+          </button>
+          <button
+            onClick={handleAutoLayout}
+            disabled={nodeCount === 0}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-30"
+            title="Auto-layout"
+          >
+            <LayoutDashboard className="h-4 w-4" />
           </button>
         </div>
         {nodeCount > 0 && (
