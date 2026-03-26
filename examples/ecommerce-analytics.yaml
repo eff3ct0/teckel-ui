@@ -1,0 +1,128 @@
+input:
+  - name: orders
+    format: parquet
+    path: 's3a://datalake/raw/orders/'
+  - name: customers
+    format: csv
+    path: 's3a://datalake/raw/customers/'
+    options:
+      header: 'true'
+      sep: ','
+      inferSchema: 'true'
+  - name: products
+    format: delta
+    path: 's3a://datalake/raw/products/'
+
+transformation:
+  - name: active_customers
+    where:
+      from: customers
+      filter: "status = 'active' AND created_at >= '2024-01-01'"
+  - name: enriched_orders
+    join:
+      from: orders
+      with: active_customers
+      on: 'orders.customer_id = active_customers.id'
+      type: inner
+  - name: orders_with_products
+    join:
+      from: enriched_orders
+      with: products
+      on: 'enriched_orders.product_id = products.id'
+      type: left
+  - name: clean_orders
+    select:
+      from: orders_with_products
+      columns:
+        - order_id
+        - customer_id
+        - customer_name
+        - email
+        - product_name
+        - category
+        - quantity
+        - unit_price
+        - order_date
+        - region
+  - name: with_totals
+    addColumns:
+      from: clean_orders
+      columns:
+        total_amount: 'quantity * unit_price'
+        order_year: 'year(order_date)'
+        order_month: 'month(order_date)'
+  - name: high_value_orders
+    where:
+      from: with_totals
+      filter: 'total_amount > 100'
+  - name: revenue_by_category
+    group:
+      from: high_value_orders
+      by:
+        - category
+        - order_year
+        - order_month
+      agg:
+        - sum(total_amount)
+        - count(order_id)
+        - avg(total_amount)
+  - name: sorted_revenue
+    order:
+      from: revenue_by_category
+      by:
+        - order_year
+        - order_month
+        - sum(total_amount)
+      order: Desc
+  - name: top_customers
+    group:
+      from: high_value_orders
+      by:
+        - customer_id
+        - customer_name
+        - email
+        - region
+      agg:
+        - sum(total_amount)
+        - count(order_id)
+  - name: top_customers_sorted
+    order:
+      from: top_customers
+      by:
+        - sum(total_amount)
+      order: Desc
+  - name: top_50_customers
+    limit:
+      from: top_customers_sorted
+      count: 50
+  - name: all_orders_deduped
+    distinct:
+      from: with_totals
+  - name: region_pivot
+    sql:
+      from: all_orders_deduped
+      query: >
+        SELECT order_year, order_month, region,
+               SUM(total_amount) as revenue,
+               COUNT(DISTINCT customer_id) as unique_customers
+        FROM __THIS__
+        GROUP BY order_year, order_month, region
+
+output:
+  - name: sorted_revenue
+    format: parquet
+    mode: overwrite
+    path: 's3a://datalake/curated/revenue_by_category/'
+    partitionBy:
+      - order_year
+  - name: top_50_customers
+    format: delta
+    mode: overwrite
+    path: 's3a://datalake/curated/top_customers/'
+  - name: region_pivot
+    format: parquet
+    mode: overwrite
+    path: 's3a://datalake/curated/region_analysis/'
+    partitionBy:
+      - order_year
+      - order_month
