@@ -47,22 +47,38 @@ function TeckelNodeComponent({ id, data, selected }: NodeProps<TeckelFlowNode>) 
         </div>
       </div>
 
-      {/* Target handle — all nodes except Input can receive connections (N inputs) */}
+      {/* Target handle (left) — all nodes except Input */}
       {data.teckelType !== "input" && (
         <Handle
           type="target"
           position={Position.Left}
           isConnectable
-          className="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[var(--card)] !bg-[var(--muted-foreground)]"
+          style={{
+            width: 12,
+            height: 12,
+            background: "var(--muted-foreground)",
+            border: "2.5px solid var(--card)",
+            borderRadius: "50%",
+            /* invisible hit area expansion via box-shadow trick is not enough,
+               so we rely on the CSS ::after pseudo-element below */
+          }}
+          className="teckel-handle"
         />
       )}
-      {/* Source handle — all nodes except Output can send connections (N outputs) */}
+      {/* Source handle (right) — all nodes except Output */}
       {data.teckelType !== "output" && (
         <Handle
           type="source"
           position={Position.Right}
           isConnectable
-          className="!h-2.5 !w-2.5 !rounded-full !border-2 !border-[var(--card)] !bg-[var(--muted-foreground)]"
+          style={{
+            width: 12,
+            height: 12,
+            background: "var(--muted-foreground)",
+            border: "2.5px solid var(--card)",
+            borderRadius: "50%",
+          }}
+          className="teckel-handle"
         />
       )}
     </div>

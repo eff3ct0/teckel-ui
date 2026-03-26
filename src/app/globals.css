@@ -138,12 +138,36 @@ body {
   stroke-width: 24px !important;
 }
 
-/* Handle hover styling */
-.react-flow__handle {
-  transition: background-color 0.15s ease, transform 0.15s ease;
+/* ── Handle styling ────────────────────────────────────── */
+/* Visible dot transitions */
+.react-flow__handle.teckel-handle {
+  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: crosshair;
 }
 
-.react-flow__handle:hover {
+/* Invisible hit area — 30x30px around the 12px visible dot */
+.react-flow__handle.teckel-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 30px;
+  height: 30px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+
+/* Hover: grow + turn blue + glow */
+.react-flow__handle.teckel-handle:hover {
+  background-color: var(--primary) !important;
+  transform: scale(1.5);
+  box-shadow: 0 0 8px var(--primary), 0 0 3px var(--primary);
+}
+
+/* While connecting (dragging a new edge) — pulse the target handles */
+.react-flow__handle.connectingto,
+.react-flow__handle.valid {
   background-color: var(--primary) !important;
   transform: scale(1.4);
+  box-shadow: 0 0 8px var(--primary);
 }
