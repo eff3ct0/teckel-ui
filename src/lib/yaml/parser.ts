@@ -138,6 +138,61 @@ function extractConfig(
 }
 
 /**
+ * Extract all source references from a transformation operation.
+ * This includes "from", "with" (joins), "sources" (union/intersect),
+ * "left"/"right" (except), etc.
+ */
+function extractSourceRefs(
+  type: TeckelNodeType,
+  op: Record<string, unknown>,
+): string[] {
+  const refs: string[] = [];
+
+  // Primary "from" — most transforms
+  if (typeof op.from === "string") refs.push(op.from);
+
+  // Join: "with" can be a string or array
+  if (type === "join") {
+    const withRef = op.with;
+    if (typeof withRef === "string") {
+      refs.push(withRef);
+    } else if (Array.isArray(withRef)) {
+      for (const r of withRef) {
+        if (typeof r === "string") refs.push(r);
+        else if (r && typeof r === "object" && typeof (r as Record<string, unknown>).ref === "string") {
+          refs.push((r as Record<string, unknown>).ref as string);
+        }
+      }
+    }
+    // Also handle "left" / "right" variant
+    if (typeof op.left === "string") refs.push(op.left);
+    if (typeof op.right === "string") refs.push(op.right);
+  }
+
+  // Union / Intersect: "sources" array
+  if (type === "union" || type === "intersect") {
+    if (Array.isArray(op.sources)) {
+      for (const s of op.sources) {
+        if (typeof s === "string" && !refs.includes(s)) refs.push(s);
+      }
+    }
+    if (Array.isArray(op.refs)) {
+      for (const s of op.refs) {
+        if (typeof s === "string" && !refs.includes(s)) refs.push(s);
+      }
+    }
+  }
+
+  // Except: "left" / "right"
+  if (type === "except") {
+    if (typeof op.left === "string" && !refs.includes(op.left)) refs.push(op.left);
+    if (typeof op.right === "string" && !refs.includes(op.right)) refs.push(op.right);
+  }
+
+  return refs;
+}
+
+/**
  * Parse Teckel YAML into nodes and edges for the pipeline editor.
  */
 export function parseYaml(yamlString: string): ParsedPipeline {
@@ -202,16 +257,18 @@ export function parseYaml(yamlString: string): ParsedPipeline {
       },
     });
 
-    // Create edge from "from" reference
+    // Create edges from all referenced sources
     const opKey = Object.keys(transform).find((k) => k !== "name")!;
     const op = transform[opKey] as Record<string, unknown>;
-    const fromRef = op?.from as string | undefined;
-    if (fromRef && refToId.has(fromRef)) {
-      edges.push({
-        id: nanoid(),
-        source: refToId.get(fromRef)!,
-        target: id,
-      });
+    const sourceRefs = extractSourceRefs(type, op);
+    for (const ref of sourceRefs) {
+      if (refToId.has(ref)) {
+        edges.push({
+          id: nanoid(),
+          source: refToId.get(ref)!,
+          target: id,
+        });
+      }
     }
 
     yPos += 120;
