@@ -154,15 +154,15 @@ export function validatePipeline(
     });
   }
 
-  // 9. Join ref validation
+  // 9. Join needs at least 2 incoming edges (left + right)
   for (const node of nodes) {
     if (node.data.teckelType === "join") {
-      const joinRef = node.data.config.ref as string;
-      if (joinRef && !nodes.some((n) => n.data.ref === joinRef)) {
+      const incomingCount = edges.filter((e) => e.target === node.id).length;
+      if (incomingCount < 2) {
         errors.push({
           nodeId: node.id,
           severity: "error",
-          message: `Join reference "${joinRef}" does not match any node`,
+          message: "Join requires at least 2 incoming connections (left + right)",
         });
       }
     }
