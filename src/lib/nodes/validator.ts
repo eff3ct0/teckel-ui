@@ -1,6 +1,16 @@
 import type { TeckelNode, TeckelEdge } from "@/types/pipeline";
 import { NODE_SCHEMAS } from "@/lib/nodes/schemas";
 
+/**
+ * AssetRef pattern from teckel-spec v2.0:
+ * Must start with a letter, only ASCII letters/digits/underscores/hyphens, 1-128 chars.
+ */
+export const ASSET_REF_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]{0,127}$/;
+
+export function isValidAssetRef(ref: string): boolean {
+  return ASSET_REF_PATTERN.test(ref);
+}
+
 export interface ValidationError {
   nodeId: string;
   severity: "error" | "warning";
@@ -55,13 +65,20 @@ export function validatePipeline(
     }
   }
 
-  // 4. Check for empty refs
+  // 4. Validate AssetRef format (spec: ^[a-zA-Z][a-zA-Z0-9_-]{0,127}$)
   for (const node of nodes) {
-    if (!node.data.ref.trim()) {
+    const ref = node.data.ref;
+    if (!ref.trim()) {
       errors.push({
         nodeId: node.id,
         severity: "error",
         message: "Reference cannot be empty",
+      });
+    } else if (!isValidAssetRef(ref)) {
+      errors.push({
+        nodeId: node.id,
+        severity: "error",
+        message: `Invalid reference "${ref}": must start with a letter, contain only letters/digits/underscores/hyphens, max 128 chars`,
       });
     }
   }
