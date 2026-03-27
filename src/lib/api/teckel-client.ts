@@ -1,10 +1,33 @@
-const DEFAULT_BASE_URL = "http://localhost:8080";
+/**
+ * Teckel server API client.
+ *
+ * Connects to teckel-server (eff3ct0/teckel-api) for pipeline
+ * validation, explain, and async job execution.
+ */
 
-function getBaseUrl(): string {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("teckel-api-url") || DEFAULT_BASE_URL;
-  }
-  return DEFAULT_BASE_URL;
+export interface ValidateResponse {
+  valid: boolean;
+  error?: string;
+}
+
+export interface ExplainResponse {
+  plan: string;
+}
+
+export interface SubmitJobResponse {
+  job_id: string;
+  status: string;
+}
+
+export type JobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+
+export interface JobResponse {
+  id: string;
+  status: JobStatus;
+  error?: string;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
 }
 
 export interface HealthResponse {
@@ -12,58 +35,64 @@ export interface HealthResponse {
   version: string;
 }
 
-export interface ValidateResponse {
-  valid: boolean;
-  errors: string[];
-}
-
-export interface DryRunResponse {
-  status: string;
-  plan: string;
-}
-
-async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const url = `${getBaseUrl()}${path}`;
+async function request<T>(baseUrl: string, path: string, options?: RequestInit): Promise<T> {
+  const url = `${baseUrl.replace(/\/+$/, "")}${path}`;
   const res = await fetch(url, {
     ...options,
     headers: {
-      "Content-Type": "text/plain",
+      "Content-Type": "application/json",
       ...options?.headers,
     },
   });
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    throw new Error(`API error ${res.status}: ${text}`);
+  const body = await res.json();
+
+  if (!res.ok && body.error) {
+    throw new Error(body.error);
   }
 
-  return res.json();
+  return body as T;
 }
 
-export const teckelApi = {
-  health: () => request<HealthResponse>("/api/health"),
+export function createTeckelClient(baseUrl: string) {
+  return {
+    async health(): Promise<HealthResponse> {
+      return request<HealthResponse>(baseUrl, "/api/health");
+    },
 
-  validate: (yaml: string) =>
-    request<ValidateResponse>("/api/pipelines/validate", {
-      method: "POST",
-      body: yaml,
-    }),
+    async validate(yaml: string, variables?: Record<string, string>): Promise<ValidateResponse> {
+      return request<ValidateResponse>(baseUrl, "/api/validate", {
+        method: "POST",
+        body: JSON.stringify({ yaml, variables: variables || {} }),
+      });
+    },
 
-  dryRun: (yaml: string) =>
-    request<DryRunResponse>("/api/pipelines/dry-run", {
-      method: "POST",
-      body: yaml,
-    }),
+    async explain(yaml: string, variables?: Record<string, string>): Promise<ExplainResponse> {
+      return request<ExplainResponse>(baseUrl, "/api/explain", {
+        method: "POST",
+        body: JSON.stringify({ yaml, variables: variables || {} }),
+      });
+    },
 
-  graph: (yaml: string, format: "mermaid" | "dot" | "ascii" = "mermaid") =>
-    request<string>(`/api/pipelines/graph?format=${format}`, {
-      method: "POST",
-      body: yaml,
-    }),
+    async submitJob(yaml: string, variables?: Record<string, string>): Promise<SubmitJobResponse> {
+      return request<SubmitJobResponse>(baseUrl, "/api/jobs", {
+        method: "POST",
+        body: JSON.stringify({ yaml, variables: variables || {} }),
+      });
+    },
 
-  setBaseUrl: (url: string) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("teckel-api-url", url);
-    }
-  },
-};
+    async getJob(jobId: string): Promise<JobResponse> {
+      return request<JobResponse>(baseUrl, `/api/jobs/${jobId}`);
+    },
+
+    async cancelJob(jobId: string): Promise<void> {
+      await request(baseUrl, `/api/jobs/${jobId}`, { method: "DELETE" });
+    },
+
+    async listJobs(): Promise<{ jobs: JobResponse[] }> {
+      return request<{ jobs: JobResponse[] }>(baseUrl, "/api/jobs");
+    },
+  };
+}
+
+export type TeckelClient = ReturnType<typeof createTeckelClient>;
