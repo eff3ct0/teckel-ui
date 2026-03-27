@@ -69,6 +69,28 @@ function NumberInput({
   );
 }
 
+function CheckboxInput({
+  value,
+  onChange,
+  label,
+}: {
+  value: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="flex items-center gap-2 text-xs text-[var(--foreground)]">
+      <input
+        type="checkbox"
+        checked={value}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-3.5 w-3.5 rounded border-[var(--border)] accent-[var(--primary)]"
+      />
+      {label}
+    </label>
+  );
+}
+
 function SelectInput({
   value,
   onChange,
@@ -105,20 +127,25 @@ const FORMAT_OPTIONS = [
 ];
 
 const MODE_OPTIONS = [
+  { value: "error", label: "Error if exists" },
   { value: "overwrite", label: "Overwrite" },
   { value: "append", label: "Append" },
   { value: "ignore", label: "Ignore" },
-  { value: "error", label: "Error if exists" },
 ];
 
 const JOIN_TYPE_OPTIONS = [
   { value: "inner", label: "Inner" },
   { value: "left", label: "Left" },
   { value: "right", label: "Right" },
-  { value: "full", label: "Full" },
+  { value: "outer", label: "Outer (Full)" },
   { value: "cross", label: "Cross" },
-  { value: "semi", label: "Semi" },
-  { value: "anti", label: "Anti" },
+  { value: "left_semi", label: "Left Semi" },
+  { value: "left_anti", label: "Left Anti" },
+];
+
+const FRAME_TYPE_OPTIONS = [
+  { value: "rows", label: "Rows" },
+  { value: "range", label: "Range" },
 ];
 
 // --- Individual Forms ---
@@ -179,7 +206,7 @@ function OutputForm({ config, onChange, nodeId }: FormProps) {
       <div>
         <Label>Mode</Label>
         <SelectInput
-          value={(config.mode as string) || "overwrite"}
+          value={(config.mode as string) || "error"}
           onChange={(v) => onChange({ mode: v })}
           options={MODE_OPTIONS}
         />
@@ -216,11 +243,11 @@ function SelectForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label>Columns</Label>
+        <Label>Columns / Expressions</Label>
         <TagInput
           value={(config.columns as string[]) || []}
           onChange={(v) => onChange({ columns: v })}
-          placeholder="Add column name..."
+          placeholder="col, expr as alias..."
         />
       </div>
     </div>
@@ -231,10 +258,10 @@ function WhereForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label>Condition</Label>
+        <Label>Filter</Label>
         <CodeInput
-          value={(config.condition as string) || ""}
-          onChange={(v) => onChange({ condition: v })}
+          value={(config.filter as string) || ""}
+          onChange={(v) => onChange({ filter: v })}
           placeholder="e.g. age > 18 AND status = 'active'"
         />
       </div>
@@ -242,18 +269,9 @@ function WhereForm({ config, onChange }: FormProps) {
   );
 }
 
-function JoinForm({ config, onChange, nodeId }: FormProps) {
+function JoinForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
-      <div>
-        <Label>Join With</Label>
-        <RefSelector
-          value={(config.ref as string) || ""}
-          onChange={(v) => onChange({ ref: v })}
-          excludeNodeId={nodeId}
-          placeholder="Select asset to join..."
-        />
-      </div>
       <div>
         <Label>Join Type</Label>
         <SelectInput
@@ -263,11 +281,11 @@ function JoinForm({ config, onChange, nodeId }: FormProps) {
         />
       </div>
       <div>
-        <Label>On</Label>
+        <Label>On (condition)</Label>
         <CodeInput
           value={(config.on as string) || ""}
           onChange={(v) => onChange({ on: v })}
-          placeholder="e.g. a.id = b.id"
+          placeholder="e.g. left_asset.id = right_asset.id"
           rows={2}
         />
       </div>
@@ -276,12 +294,12 @@ function JoinForm({ config, onChange, nodeId }: FormProps) {
 }
 
 function GroupByForm({ config, onChange }: FormProps) {
-  const agg = (config.agg as Array<{ column: string; function: string }>) || [];
+  const agg = (config.agg as string[]) || [];
 
-  const addAgg = () => onChange({ agg: [...agg, { column: "", function: "" }] });
+  const addAgg = () => onChange({ agg: [...agg, ""] });
   const removeAgg = (i: number) => onChange({ agg: agg.filter((_, idx) => idx !== i) });
-  const updateAgg = (i: number, field: string, value: string) => {
-    const next = agg.map((a, idx) => (idx === i ? { ...a, [field]: value } : a));
+  const updateAgg = (i: number, value: string) => {
+    const next = agg.map((a, idx) => (idx === i ? value : a));
     onChange({ agg: next });
   };
 
@@ -290,8 +308,8 @@ function GroupByForm({ config, onChange }: FormProps) {
       <div>
         <Label>Group By Columns</Label>
         <TagInput
-          value={(config.columns as string[]) || []}
-          onChange={(v) => onChange({ columns: v })}
+          value={(config.by as string[]) || []}
+          onChange={(v) => onChange({ by: v })}
           placeholder="Add column..."
         />
       </div>
@@ -301,15 +319,9 @@ function GroupByForm({ config, onChange }: FormProps) {
           {agg.map((a, i) => (
             <div key={i} className="flex items-center gap-1.5">
               <input
-                value={a.column}
-                onChange={(e) => updateAgg(i, "column", e.target.value)}
-                placeholder="column"
-                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
-              />
-              <input
-                value={a.function}
-                onChange={(e) => updateAgg(i, "function", e.target.value)}
-                placeholder="sum, avg, count..."
+                value={a}
+                onChange={(e) => updateAgg(i, e.target.value)}
+                placeholder="sum(amount) as total"
                 className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
               />
               <button
@@ -336,9 +348,9 @@ function GroupByForm({ config, onChange }: FormProps) {
 }
 
 function OrderByForm({ config, onChange }: FormProps) {
-  const columns = (config.columns as Array<{ column: string; direction: string }>) || [];
+  const columns = (config.columns as Array<{ column: string; direction: string; nulls: string }>) || [];
 
-  const addCol = () => onChange({ columns: [...columns, { column: "", direction: "asc" }] });
+  const addCol = () => onChange({ columns: [...columns, { column: "", direction: "asc", nulls: "last" }] });
   const removeCol = (i: number) => onChange({ columns: columns.filter((_, idx) => idx !== i) });
   const updateCol = (i: number, field: string, value: string) => {
     const next = columns.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
@@ -364,6 +376,14 @@ function OrderByForm({ config, onChange }: FormProps) {
             >
               <option value="asc">ASC</option>
               <option value="desc">DESC</option>
+            </select>
+            <select
+              value={c.nulls}
+              onChange={(e) => updateCol(i, "nulls", e.target.value)}
+              className="h-7 rounded border border-[var(--border)] bg-[var(--background)] px-1.5 text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+            >
+              <option value="last">Nulls Last</option>
+              <option value="first">Nulls First</option>
             </select>
             <button
               type="button"
@@ -395,8 +415,16 @@ function SqlForm({ config, onChange }: FormProps) {
         <CodeInput
           value={(config.query as string) || ""}
           onChange={(v) => onChange({ query: v })}
-          placeholder="SELECT * FROM {ref} WHERE ..."
+          placeholder="SELECT * FROM my_view WHERE ..."
           rows={6}
+        />
+      </div>
+      <div>
+        <Label>Views (registered temp views)</Label>
+        <TagInput
+          value={(config.views as string[]) || []}
+          onChange={(v) => onChange({ views: v })}
+          placeholder="Add asset ref..."
         />
       </div>
     </div>
@@ -404,6 +432,26 @@ function SqlForm({ config, onChange }: FormProps) {
 }
 
 function WindowForm({ config, onChange }: FormProps) {
+  const orderBy = (config.orderBy as Array<{ column: string; direction: string; nulls: string }>) || [];
+  const frame = (config.frame as { type: string; start: string; end: string }) || {
+    type: "range", start: "unbounded preceding", end: "current row",
+  };
+  const functions = (config.functions as Array<{ expression: string; alias: string }>) || [];
+
+  const addOrderBy = () => onChange({ orderBy: [...orderBy, { column: "", direction: "asc", nulls: "last" }] });
+  const removeOrderBy = (i: number) => onChange({ orderBy: orderBy.filter((_, idx) => idx !== i) });
+  const updateOrderBy = (i: number, field: string, value: string) => {
+    const next = orderBy.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
+    onChange({ orderBy: next });
+  };
+
+  const addFunc = () => onChange({ functions: [...functions, { expression: "", alias: "" }] });
+  const removeFunc = (i: number) => onChange({ functions: functions.filter((_, idx) => idx !== i) });
+  const updateFunc = (i: number, field: string, value: string) => {
+    const next = functions.map((f, idx) => (idx === i ? { ...f, [field]: value } : f));
+    onChange({ functions: next });
+  };
+
   return (
     <div className="space-y-3">
       <div>
@@ -411,28 +459,181 @@ function WindowForm({ config, onChange }: FormProps) {
         <TagInput
           value={(config.partitionBy as string[]) || []}
           onChange={(v) => onChange({ partitionBy: v })}
+          placeholder="Add column..."
         />
       </div>
       <div>
         <Label>Order By</Label>
+        <div className="space-y-1.5">
+          {orderBy.map((c, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={c.column}
+                onChange={(e) => updateOrderBy(i, "column", e.target.value)}
+                placeholder="column"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <select
+                value={c.direction}
+                onChange={(e) => updateOrderBy(i, "direction", e.target.value)}
+                className="h-7 rounded border border-[var(--border)] bg-[var(--background)] px-1.5 text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              >
+                <option value="asc">ASC</option>
+                <option value="desc">DESC</option>
+              </select>
+              <button
+                type="button"
+                onClick={() => removeOrderBy(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addOrderBy}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add order column
+          </button>
+        </div>
+      </div>
+      <div>
+        <Label>Frame</Label>
+        <div className="space-y-1.5">
+          <SelectInput
+            value={frame.type || "range"}
+            onChange={(v) => onChange({ frame: { ...frame, type: v } })}
+            options={FRAME_TYPE_OPTIONS}
+          />
+          <TextInput
+            value={frame.start || "unbounded preceding"}
+            onChange={(v) => onChange({ frame: { ...frame, start: v } })}
+            placeholder="unbounded preceding"
+            mono
+          />
+          <TextInput
+            value={frame.end || "current row"}
+            onChange={(v) => onChange({ frame: { ...frame, end: v } })}
+            placeholder="current row"
+            mono
+          />
+        </div>
+      </div>
+      <div>
+        <Label>Functions</Label>
+        <div className="space-y-1.5">
+          {functions.map((f, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={f.expression}
+                  onChange={(e) => updateFunc(i, "expression", e.target.value)}
+                  placeholder="row_number()"
+                  className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <input
+                  value={f.alias}
+                  onChange={(e) => updateFunc(i, "alias", e.target.value)}
+                  placeholder="alias"
+                  className="h-7 w-24 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeFunc(i)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addFunc}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add function
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function UnionForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Sources</Label>
         <TagInput
-          value={(config.orderBy as string[]) || []}
-          onChange={(v) => onChange({ orderBy: v })}
+          value={(config.sources as string[]) || []}
+          onChange={(v) => onChange({ sources: v })}
+          placeholder="Add source ref..."
+        />
+      </div>
+      <div>
+        <CheckboxInput
+          value={config.all !== false}
+          onChange={(v) => onChange({ all: v })}
+          label="UNION ALL (include duplicates)"
         />
       </div>
     </div>
   );
 }
 
-function MultiRefForm({ config, onChange, nodeId }: FormProps) {
+function IntersectForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label>References</Label>
+        <Label>Sources</Label>
         <TagInput
-          value={(config.refs as string[]) || []}
-          onChange={(v) => onChange({ refs: v })}
-          placeholder="Add ref name..."
+          value={(config.sources as string[]) || []}
+          onChange={(v) => onChange({ sources: v })}
+          placeholder="Add source ref..."
+        />
+      </div>
+      <div>
+        <CheckboxInput
+          value={config.all === true}
+          onChange={(v) => onChange({ all: v })}
+          label="INTERSECT ALL (include duplicates)"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExceptForm({ config, onChange, nodeId }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Left</Label>
+        <RefSelector
+          value={(config.left as string) || ""}
+          onChange={(v) => onChange({ left: v })}
+          excludeNodeId={nodeId}
+          placeholder="Select left asset..."
+        />
+      </div>
+      <div>
+        <Label>Right</Label>
+        <RefSelector
+          value={(config.right as string) || ""}
+          onChange={(v) => onChange({ right: v })}
+          excludeNodeId={nodeId}
+          placeholder="Select right asset..."
+        />
+      </div>
+      <div>
+        <CheckboxInput
+          value={config.all === true}
+          onChange={(v) => onChange({ all: v })}
+          label="EXCEPT ALL (include duplicates)"
         />
       </div>
     </div>
@@ -510,10 +711,10 @@ function RenameColumnsForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label>Column Mapping (old → new)</Label>
+        <Label>Column Mappings (old → new)</Label>
         <KeyValueEditor
-          value={(config.mapping as Record<string, string>) || {}}
-          onChange={(v) => onChange({ mapping: v })}
+          value={(config.mappings as Record<string, string>) || {}}
+          onChange={(v) => onChange({ mappings: v })}
           keyPlaceholder="old name"
           valuePlaceholder="new name"
         />
@@ -523,25 +724,66 @@ function RenameColumnsForm({ config, onChange }: FormProps) {
 }
 
 function CastColumnsForm({ config, onChange }: FormProps) {
+  const columns = (config.columns as Array<{ name: string; targetType: string }>) || [];
+
+  const addCol = () => onChange({ columns: [...columns, { name: "", targetType: "" }] });
+  const removeCol = (i: number) => onChange({ columns: columns.filter((_, idx) => idx !== i) });
+  const updateCol = (i: number, field: string, value: string) => {
+    const next = columns.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
+    onChange({ columns: next });
+  };
+
   return (
     <div className="space-y-3">
-      <div>
-        <Label>Column → Type</Label>
-        <KeyValueEditor
-          value={(config.mapping as Record<string, string>) || {}}
-          onChange={(v) => onChange({ mapping: v })}
-          keyPlaceholder="column"
-          valuePlaceholder="string, int, double..."
-        />
+      <Label>Cast Columns</Label>
+      <div className="space-y-1.5">
+        {columns.map((c, i) => (
+          <div key={i} className="flex items-center gap-1.5">
+            <input
+              value={c.name}
+              onChange={(e) => updateCol(i, "name", e.target.value)}
+              placeholder="column"
+              className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+            />
+            <input
+              value={c.targetType}
+              onChange={(e) => updateCol(i, "targetType", e.target.value)}
+              placeholder="string, int, double..."
+              className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={() => removeCol(i)}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addCol}
+          className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+        >
+          <Plus className="h-3 w-3" />
+          Add column
+        </button>
       </div>
     </div>
   );
 }
 
-function DistinctForm(_props: FormProps) {
+function DistinctForm({ config, onChange }: FormProps) {
   return (
-    <div className="py-2 text-xs text-[var(--muted-foreground)]">
-      No additional configuration needed.
+    <div className="space-y-3">
+      <div>
+        <Label>Columns (optional, empty = all)</Label>
+        <TagInput
+          value={(config.columns as string[]) || []}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
     </div>
   );
 }
@@ -554,7 +796,7 @@ function LimitForm({ config, onChange }: FormProps) {
         <NumberInput
           value={(config.count as number) || 100}
           onChange={(v) => onChange({ count: v })}
-          min={1}
+          min={0}
         />
       </div>
     </div>
@@ -575,6 +817,13 @@ function SampleForm({ config, onChange }: FormProps) {
         />
       </div>
       <div>
+        <CheckboxInput
+          value={(config.withReplacement as boolean) || false}
+          onChange={(v) => onChange({ withReplacement: v })}
+          label="With Replacement"
+        />
+      </div>
+      <div>
         <Label>Seed (optional)</Label>
         <NumberInput
           value={(config.seed as number) || 0}
@@ -586,8 +835,25 @@ function SampleForm({ config, onChange }: FormProps) {
 }
 
 function PivotForm({ config, onChange }: FormProps) {
+  const agg = (config.agg as string[]) || [];
+
+  const addAgg = () => onChange({ agg: [...agg, ""] });
+  const removeAgg = (i: number) => onChange({ agg: agg.filter((_, idx) => idx !== i) });
+  const updateAgg = (i: number, value: string) => {
+    const next = agg.map((a, idx) => (idx === i ? value : a));
+    onChange({ agg: next });
+  };
+
   return (
     <div className="space-y-3">
+      <div>
+        <Label>Group By</Label>
+        <TagInput
+          value={(config.groupBy as string[]) || []}
+          onChange={(v) => onChange({ groupBy: v })}
+          placeholder="Add grouping column..."
+        />
+      </div>
       <div>
         <Label>Pivot Column</Label>
         <TextInput
@@ -598,7 +864,7 @@ function PivotForm({ config, onChange }: FormProps) {
         />
       </div>
       <div>
-        <Label>Values</Label>
+        <Label>Values (optional)</Label>
         <TagInput
           value={(config.values as string[]) || []}
           onChange={(v) => onChange({ values: v })}
@@ -606,13 +872,34 @@ function PivotForm({ config, onChange }: FormProps) {
         />
       </div>
       <div>
-        <Label>Aggregation (column → function)</Label>
-        <KeyValueEditor
-          value={(config.agg as Record<string, string>) || {}}
-          onChange={(v) => onChange({ agg: v })}
-          keyPlaceholder="column"
-          valuePlaceholder="sum, avg..."
-        />
+        <Label>Aggregations</Label>
+        <div className="space-y-1.5">
+          {agg.map((a, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={a}
+                onChange={(e) => updateAgg(i, e.target.value)}
+                placeholder="sum(amount)"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => removeAgg(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addAgg}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add aggregation
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -624,32 +911,69 @@ function UnpivotForm({ config, onChange }: FormProps) {
       <div>
         <Label>ID Columns</Label>
         <TagInput
-          value={(config.idColumns as string[]) || []}
-          onChange={(v) => onChange({ idColumns: v })}
+          value={(config.ids as string[]) || []}
+          onChange={(v) => onChange({ ids: v })}
           placeholder="Add ID column..."
         />
       </div>
       <div>
         <Label>Value Columns</Label>
         <TagInput
-          value={(config.valueColumns as string[]) || []}
-          onChange={(v) => onChange({ valueColumns: v })}
+          value={(config.values as string[]) || []}
+          onChange={(v) => onChange({ values: v })}
           placeholder="Add value column..."
+        />
+      </div>
+      <div>
+        <Label>Variable Column Name</Label>
+        <TextInput
+          value={(config.variableColumn as string) || ""}
+          onChange={(v) => onChange({ variableColumn: v })}
+          placeholder="variable"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Value Column Name</Label>
+        <TextInput
+          value={(config.valueColumn as string) || ""}
+          onChange={(v) => onChange({ valueColumn: v })}
+          placeholder="value"
+          mono
         />
       </div>
     </div>
   );
 }
 
-function PartitionForm({
-  config,
-  onChange,
-  label,
-}: FormProps & { label: string }) {
+function RepartitionForm({ config, onChange }: FormProps) {
   return (
     <div className="space-y-3">
       <div>
-        <Label>{label}</Label>
+        <Label>Number of Partitions</Label>
+        <NumberInput
+          value={(config.numPartitions as number) || 200}
+          onChange={(v) => onChange({ numPartitions: v })}
+          min={1}
+        />
+      </div>
+      <div>
+        <Label>Hash Columns (optional)</Label>
+        <TagInput
+          value={(config.columns as string[]) || []}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+    </div>
+  );
+}
+
+function CoalesceForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Number of Partitions</Label>
         <NumberInput
           value={(config.numPartitions as number) || 1}
           onChange={(v) => onChange({ numPartitions: v })}
@@ -672,9 +996,9 @@ const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
   orderBy: OrderByForm,
   sql: SqlForm,
   window: WindowForm,
-  union: MultiRefForm,
-  intersect: MultiRefForm,
-  except: MultiRefForm,
+  union: UnionForm,
+  intersect: IntersectForm,
+  except: ExceptForm,
   addColumns: AddColumnsForm,
   dropColumns: DropColumnsForm,
   renameColumns: RenameColumnsForm,
@@ -684,8 +1008,8 @@ const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
   sample: SampleForm,
   pivot: PivotForm,
   unpivot: UnpivotForm,
-  repartition: (props: FormProps) => <PartitionForm {...props} label="Number of Partitions" />,
-  coalesce: (props: FormProps) => <PartitionForm {...props} label="Number of Partitions" />,
+  repartition: RepartitionForm,
+  coalesce: CoalesceForm,
 };
 
 export function NodeConfigForm({

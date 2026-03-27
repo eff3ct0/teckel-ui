@@ -22,7 +22,8 @@ interface TeckelTransformation {
   [operation: string]: unknown;
 }
 
-interface TeckelPipeline {
+interface TeckelPipelineDoc {
+  version: string;
   input: TeckelInput[];
   transformation?: TeckelTransformation[];
   output: TeckelOutput[];
@@ -97,14 +98,11 @@ function getFromRef(
 
 /**
  * Map a node type and its config to the Teckel YAML transformation format.
- * Receives all incoming refs to support N-input transforms.
  */
 function buildTransformation(
   node: TeckelNode,
   fromRef: string | undefined,
   allFromRefs: string[],
-  edges: TeckelEdge[],
-  nodeMap: Map<string, TeckelNode>,
 ): TeckelTransformation | null {
   const config = node.data.config;
   const type = node.data.teckelType;
@@ -121,21 +119,23 @@ function buildTransformation(
       name: node.data.ref,
       where: {
         from: fromRef,
-        filter: (config.condition as string) || "",
+        filter: (config.filter as string) || "",
       },
     }),
     join: () => {
-      // Join uses first incoming edge as "from" and remaining as "with"
-      const others = allFromRefs.slice(1);
-      const configRef = config.ref as string;
-      const withRefs = others.length > 0 ? others : configRef ? [configRef] : [];
+      // Spec: left is first edge, right is array of JoinTarget
+      const rightRefs = allFromRefs.slice(1);
+      const joinType = (config.joinType as string) || "inner";
+      const on = (config.on as string) || "";
       return {
         name: node.data.ref,
         join: {
-          from: fromRef,
-          with: withRefs.length === 1 ? withRefs[0] : withRefs,
-          on: (config.on as string) || "",
-          type: (config.joinType as string) || "inner",
+          left: fromRef,
+          right: rightRefs.map((ref) => ({
+            name: ref,
+            type: joinType,
+            on: on ? [on] : [],
+          })),
         },
       };
     },
@@ -143,72 +143,89 @@ function buildTransformation(
       name: node.data.ref,
       group: {
         from: fromRef,
-        by: (config.columns as string[]) || [],
-        agg: ((config.agg as Array<{ column: string; function: string }>) || []).map(
-          (a) => `${a.function}(${a.column})`,
-        ),
+        by: (config.by as string[]) || [],
+        agg: (config.agg as string[]) || [],
       },
     }),
     orderBy: () => {
-      const columns = (config.columns as Array<{ column: string; direction: string }>) || [];
+      const columns = (config.columns as Array<{ column: string; direction: string; nulls: string }>) || [];
       return {
         name: node.data.ref,
-        order: {
+        orderBy: {
           from: fromRef,
-          by: columns.map((c) => c.column),
-          order: columns[0]?.direction === "desc" ? "Desc" : "Asc",
+          columns: columns.map((c) => {
+            const entry: Record<string, string> = { column: c.column };
+            if (c.direction !== "asc") entry.direction = c.direction;
+            if (c.nulls !== "last") entry.nulls = c.nulls;
+            return entry;
+          }),
         },
       };
     },
-    sql: () => ({
-      name: node.data.ref,
-      sql: {
-        from: fromRef,
-        query: (config.query as string) || "",
-      },
-    }),
-    window: () => ({
-      name: node.data.ref,
-      window: {
-        from: fromRef,
-        partitionBy: (config.partitionBy as string[]) || [],
-        orderBy: (config.orderBy as string[]) || [],
-      },
-    }),
-    union: () => {
-      // Union merges all incoming edges as sources
-      const sources = allFromRefs.length > 0 ? allFromRefs : (config.refs as string[]) || [];
+    sql: () => {
+      const views = (config.views as string[]) || [];
+      // If no explicit views, use incoming edges as views
+      const effectiveViews = views.length > 0 ? views : allFromRefs;
       return {
         name: node.data.ref,
-        union: { sources },
+        sql: {
+          query: (config.query as string) || "",
+          views: effectiveViews,
+        },
+      };
+    },
+    window: () => {
+      const orderBy = (config.orderBy as Array<{ column: string; direction: string; nulls: string }>) || [];
+      const frame = (config.frame as { type: string; start: string; end: string }) || {};
+      const functions = (config.functions as Array<{ expression: string; alias: string }>) || [];
+      const result: Record<string, unknown> = {
+        from: fromRef,
+        partitionBy: (config.partitionBy as string[]) || [],
+        functions: functions,
+      };
+      if (orderBy.length > 0) {
+        result.orderBy = orderBy.map((c) => {
+          const entry: Record<string, string> = { column: c.column };
+          if (c.direction !== "asc") entry.direction = c.direction;
+          if (c.nulls !== "last") entry.nulls = c.nulls;
+          return entry;
+        });
+      }
+      if (frame.type && (frame.type !== "range" || frame.start !== "unbounded preceding" || frame.end !== "current row")) {
+        result.frame = frame;
+      }
+      return { name: node.data.ref, window: result };
+    },
+    union: () => {
+      const sources = allFromRefs.length > 0 ? allFromRefs : (config.sources as string[]) || [];
+      const all = config.all !== false;
+      return {
+        name: node.data.ref,
+        union: { sources, ...(all ? {} : { all: false }) },
       };
     },
     intersect: () => {
-      const sources = allFromRefs.length > 0 ? allFromRefs : (config.refs as string[]) || [];
+      const sources = allFromRefs.length > 0 ? allFromRefs : (config.sources as string[]) || [];
+      const all = config.all === true;
       return {
         name: node.data.ref,
-        intersect: { sources },
+        intersect: { sources, ...(all ? { all: true } : {}) },
       };
     },
     except: () => {
-      // Except: first incoming is "left", second is "right"
-      const left = allFromRefs[0] || (config.refs as string[])?.[0] || "";
-      const right = allFromRefs[1] || (config.refs as string[])?.[1] || "";
+      const left = allFromRefs[0] || (config.left as string) || "";
+      const right = allFromRefs[1] || (config.right as string) || "";
+      const all = config.all === true;
       return {
         name: node.data.ref,
-        except: { left, right },
+        except: { left, right, ...(all ? { all: true } : {}) },
       };
     },
     addColumns: () => ({
       name: node.data.ref,
       addColumns: {
         from: fromRef,
-        columns: Object.fromEntries(
-          ((config.columns as Array<{ name: string; expression: string }>) || []).map((c) => [
-            c.name,
-            c.expression,
-          ]),
-        ),
+        columns: (config.columns as Array<{ name: string; expression: string }>) || [],
       },
     }),
     dropColumns: () => ({
@@ -222,22 +239,26 @@ function buildTransformation(
       name: node.data.ref,
       renameColumns: {
         from: fromRef,
-        mapping: (config.mapping as Record<string, string>) || {},
+        mappings: (config.mappings as Record<string, string>) || {},
       },
     }),
     castColumns: () => ({
       name: node.data.ref,
       castColumns: {
         from: fromRef,
-        mapping: (config.mapping as Record<string, string>) || {},
+        columns: (config.columns as Array<{ name: string; targetType: string }>) || [],
       },
     }),
-    distinct: () => ({
-      name: node.data.ref,
-      distinct: {
-        from: fromRef,
-      },
-    }),
+    distinct: () => {
+      const columns = (config.columns as string[]) || [];
+      return {
+        name: node.data.ref,
+        distinct: {
+          from: fromRef,
+          ...(columns.length > 0 ? { columns } : {}),
+        },
+      };
+    },
     limit: () => ({
       name: node.data.ref,
       limit: {
@@ -245,38 +266,49 @@ function buildTransformation(
         count: (config.count as number) || 100,
       },
     }),
-    sample: () => ({
-      name: node.data.ref,
-      sample: {
-        from: fromRef,
-        fraction: (config.fraction as number) || 0.1,
-        ...(config.seed != null ? { seed: config.seed } : {}),
-      },
-    }),
+    sample: () => {
+      const withReplacement = config.withReplacement === true;
+      return {
+        name: node.data.ref,
+        sample: {
+          from: fromRef,
+          fraction: (config.fraction as number) || 0.1,
+          ...(withReplacement ? { withReplacement: true } : {}),
+          ...(config.seed != null ? { seed: config.seed } : {}),
+        },
+      };
+    },
     pivot: () => ({
       name: node.data.ref,
       pivot: {
         from: fromRef,
+        groupBy: (config.groupBy as string[]) || [],
         pivotColumn: (config.pivotColumn as string) || "",
         values: (config.values as string[]) || [],
-        agg: (config.agg as Record<string, string>) || {},
+        agg: (config.agg as string[]) || [],
       },
     }),
     unpivot: () => ({
       name: node.data.ref,
       unpivot: {
         from: fromRef,
-        idColumns: (config.idColumns as string[]) || [],
-        valueColumns: (config.valueColumns as string[]) || [],
+        ids: (config.ids as string[]) || [],
+        values: (config.values as string[]) || [],
+        variableColumn: (config.variableColumn as string) || "",
+        valueColumn: (config.valueColumn as string) || "",
       },
     }),
-    repartition: () => ({
-      name: node.data.ref,
-      repartition: {
-        from: fromRef,
-        numPartitions: (config.numPartitions as number) || 200,
-      },
-    }),
+    repartition: () => {
+      const columns = (config.columns as string[]) || [];
+      return {
+        name: node.data.ref,
+        repartition: {
+          from: fromRef,
+          numPartitions: (config.numPartitions as number) || 200,
+          ...(columns.length > 0 ? { columns } : {}),
+        },
+      };
+    },
     coalesce: () => ({
       name: node.data.ref,
       coalesce: {
@@ -338,14 +370,15 @@ export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
     } else {
       const allFromRefs = getAllFromRefs(node.id, edges, nodeMap);
       const fromRef = allFromRefs[0];
-      const transformation = buildTransformation(node, fromRef, allFromRefs, edges, nodeMap);
+      const transformation = buildTransformation(node, fromRef, allFromRefs);
       if (transformation) {
         transformations.push(transformation);
       }
     }
   }
 
-  const pipeline: TeckelPipeline = {
+  const pipeline: TeckelPipelineDoc = {
+    version: "2.0",
     input: inputs,
     ...(transformations.length > 0 ? { transformation: transformations } : {}),
     output: outputs,

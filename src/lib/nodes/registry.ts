@@ -66,7 +66,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "filtering",
     color: "#f59e0b",
     icon: Filter,
-    defaultConfig: { condition: "" },
+    defaultConfig: { filter: "" },
   },
   join: {
     type: "join",
@@ -74,7 +74,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "joins-sets",
     color: "#8b5cf6",
     icon: GitMerge,
-    defaultConfig: { ref: "", on: "", joinType: "inner" },
+    defaultConfig: { joinType: "inner", on: "" },
   },
   groupBy: {
     type: "groupBy",
@@ -82,7 +82,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "aggregation",
     color: "#06b6d4",
     icon: Group,
-    defaultConfig: { columns: [], agg: [] },
+    defaultConfig: { by: [], agg: [] },
   },
   orderBy: {
     type: "orderBy",
@@ -98,7 +98,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "advanced",
     color: "#d946ef",
     icon: Code,
-    defaultConfig: { query: "" },
+    defaultConfig: { query: "", views: [] },
   },
   window: {
     type: "window",
@@ -106,7 +106,12 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "aggregation",
     color: "#14b8a6",
     icon: AppWindow,
-    defaultConfig: { partitionBy: [], orderBy: [], frame: {} },
+    defaultConfig: {
+      partitionBy: [],
+      orderBy: [],
+      frame: { type: "range", start: "unbounded preceding", end: "current row" },
+      functions: [],
+    },
   },
   union: {
     type: "union",
@@ -114,7 +119,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "joins-sets",
     color: "#84cc16",
     icon: Combine,
-    defaultConfig: { refs: [] },
+    defaultConfig: { sources: [], all: true },
   },
   intersect: {
     type: "intersect",
@@ -122,7 +127,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "joins-sets",
     color: "#0ea5e9",
     icon: CircleDot,
-    defaultConfig: { refs: [] },
+    defaultConfig: { sources: [], all: false },
   },
   except: {
     type: "except",
@@ -130,7 +135,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "joins-sets",
     color: "#ef4444",
     icon: Split,
-    defaultConfig: { refs: [] },
+    defaultConfig: { left: "", right: "", all: false },
   },
   addColumns: {
     type: "addColumns",
@@ -154,7 +159,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "columns",
     color: "#a855f7",
     icon: Replace,
-    defaultConfig: { mapping: {} },
+    defaultConfig: { mappings: {} },
   },
   castColumns: {
     type: "castColumns",
@@ -162,7 +167,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "columns",
     color: "#eab308",
     icon: CaseSensitive,
-    defaultConfig: { mapping: {} },
+    defaultConfig: { columns: [] },
   },
   distinct: {
     type: "distinct",
@@ -170,7 +175,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "filtering",
     color: "#10b981",
     icon: Fingerprint,
-    defaultConfig: {},
+    defaultConfig: { columns: [] },
   },
   limit: {
     type: "limit",
@@ -186,7 +191,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "filtering",
     color: "#78716c",
     icon: Percent,
-    defaultConfig: { fraction: 0.1, seed: null },
+    defaultConfig: { fraction: 0.1, withReplacement: false, seed: null },
   },
   pivot: {
     type: "pivot",
@@ -194,7 +199,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "reshaping",
     color: "#3b82f6",
     icon: RotateCcw,
-    defaultConfig: { pivotColumn: "", values: [], agg: {} },
+    defaultConfig: { groupBy: [], pivotColumn: "", values: [], agg: [] },
   },
   unpivot: {
     type: "unpivot",
@@ -202,7 +207,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "reshaping",
     color: "#8b5cf6",
     icon: RotateCw,
-    defaultConfig: { idColumns: [], valueColumns: [] },
+    defaultConfig: { ids: [], values: [], variableColumn: "", valueColumn: "" },
   },
   repartition: {
     type: "repartition",
@@ -210,7 +215,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "advanced",
     color: "#6b7280",
     icon: Expand,
-    defaultConfig: { numPartitions: 200 },
+    defaultConfig: { numPartitions: 200, columns: [] },
   },
   coalesce: {
     type: "coalesce",

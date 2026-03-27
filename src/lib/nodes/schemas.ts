@@ -20,23 +20,17 @@ export const selectSchema = z.object({
 });
 
 export const whereSchema = z.object({
-  condition: z.string().min(1, "Condition is required"),
+  filter: z.string().min(1, "Filter is required"),
 });
 
 export const joinSchema = z.object({
-  ref: z.string().min(1, "Join reference is required"),
+  joinType: z.enum(["inner", "left", "right", "outer", "cross", "left_semi", "left_anti"]),
   on: z.string().min(1, "Join condition is required"),
-  joinType: z.enum(["inner", "left", "right", "full", "cross", "semi", "anti"]),
 });
 
 export const groupBySchema = z.object({
-  columns: z.array(z.string()).min(1, "At least one column required"),
-  agg: z.array(
-    z.object({
-      column: z.string().min(1),
-      function: z.string().min(1),
-    }),
-  ),
+  by: z.array(z.string()).min(1, "At least one column required"),
+  agg: z.array(z.string()).default([]),
 });
 
 export const orderBySchema = z.object({
@@ -44,30 +38,52 @@ export const orderBySchema = z.object({
     z.object({
       column: z.string().min(1),
       direction: z.enum(["asc", "desc"]).default("asc"),
+      nulls: z.enum(["first", "last"]).default("last"),
     }),
   ),
 });
 
 export const sqlSchema = z.object({
   query: z.string().min(1, "SQL query is required"),
+  views: z.array(z.string()).default([]),
 });
 
 export const windowSchema = z.object({
-  partitionBy: z.array(z.string()).default([]),
-  orderBy: z.array(z.string()).default([]),
-  frame: z.record(z.unknown()).default({}),
+  partitionBy: z.array(z.string()).min(1, "At least one partition column required"),
+  orderBy: z.array(
+    z.object({
+      column: z.string().min(1),
+      direction: z.enum(["asc", "desc"]).default("asc"),
+      nulls: z.enum(["first", "last"]).default("last"),
+    }),
+  ).default([]),
+  frame: z.object({
+    type: z.enum(["rows", "range"]).default("range"),
+    start: z.string().default("unbounded preceding"),
+    end: z.string().default("current row"),
+  }).default({ type: "range", start: "unbounded preceding", end: "current row" }),
+  functions: z.array(
+    z.object({
+      expression: z.string().min(1),
+      alias: z.string().min(1),
+    }),
+  ).min(1, "At least one window function required"),
 });
 
 export const unionSchema = z.object({
-  refs: z.array(z.string()),
+  sources: z.array(z.string()),
+  all: z.boolean().default(true),
 });
 
 export const intersectSchema = z.object({
-  refs: z.array(z.string()),
+  sources: z.array(z.string()),
+  all: z.boolean().default(false),
 });
 
 export const exceptSchema = z.object({
-  refs: z.array(z.string()),
+  left: z.string().default(""),
+  right: z.string().default(""),
+  all: z.boolean().default(false),
 });
 
 export const addColumnsSchema = z.object({
@@ -84,37 +100,49 @@ export const dropColumnsSchema = z.object({
 });
 
 export const renameColumnsSchema = z.object({
-  mapping: z.record(z.string()),
+  mappings: z.record(z.string()),
 });
 
 export const castColumnsSchema = z.object({
-  mapping: z.record(z.string()),
+  columns: z.array(
+    z.object({
+      name: z.string().min(1),
+      targetType: z.string().min(1),
+    }),
+  ),
 });
 
-export const distinctSchema = z.object({});
+export const distinctSchema = z.object({
+  columns: z.array(z.string()).default([]),
+});
 
 export const limitSchema = z.object({
-  count: z.number().int().positive("Count must be positive"),
+  count: z.number().int().min(0, "Count must be >= 0"),
 });
 
 export const sampleSchema = z.object({
-  fraction: z.number().min(0).max(1),
+  fraction: z.number().gt(0).lte(1),
+  withReplacement: z.boolean().default(false),
   seed: z.number().nullable().default(null),
 });
 
 export const pivotSchema = z.object({
+  groupBy: z.array(z.string()).min(1, "At least one group column required"),
   pivotColumn: z.string().min(1, "Pivot column is required"),
-  values: z.array(z.string()),
-  agg: z.record(z.string()),
+  values: z.array(z.string()).default([]),
+  agg: z.array(z.string()).min(1, "At least one aggregation required"),
 });
 
 export const unpivotSchema = z.object({
-  idColumns: z.array(z.string()),
-  valueColumns: z.array(z.string()),
+  ids: z.array(z.string()).min(1, "At least one ID column required"),
+  values: z.array(z.string()).min(1, "At least one value column required"),
+  variableColumn: z.string().min(1, "Variable column name is required"),
+  valueColumn: z.string().min(1, "Value column name is required"),
 });
 
 export const repartitionSchema = z.object({
   numPartitions: z.number().int().positive(),
+  columns: z.array(z.string()).default([]),
 });
 
 export const coalesceSchema = z.object({
