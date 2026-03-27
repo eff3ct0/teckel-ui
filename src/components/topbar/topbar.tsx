@@ -7,8 +7,12 @@ import { useYamlExport } from "@/hooks/use-yaml-export";
 import { useValidation } from "@/hooks/use-validation";
 import { useThemeStore } from "@/stores/theme-store";
 import { autoLayout } from "@/lib/layout/auto-layout";
+import { useConnectionStore } from "@/stores/connection-store";
+import { useJob } from "@/hooks/use-job";
+import { useServerValidation } from "@/hooks/use-server-validation";
 import {
   Play,
+  Square,
   Save,
   FileDown,
   FileUp,
@@ -23,6 +27,10 @@ import {
   Moon,
   LayoutDashboard,
   Settings2,
+  Wifi,
+  WifiOff,
+  Loader2,
+  ServerCrash,
 } from "lucide-react";
 
 export function TopBar() {
@@ -54,6 +62,9 @@ export function TopBar() {
   const toggleTheme = useThemeStore((s) => s.toggleTheme);
   const { errorCount, warningCount } = useValidation();
   const nodeCount = usePipelineStore((s) => s.nodes.length);
+  const connected = useConnectionStore((s) => s.connected);
+  const { job, submitJob, cancelJob } = useJob();
+  const serverValidation = useServerValidation();
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-3">
@@ -184,13 +195,54 @@ export function TopBar() {
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
         <div className="mx-1 h-5 w-px bg-[var(--border)]" />
-        <button
-          className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--primary)]/90"
-          title="Run pipeline"
+        {/* Connection indicator */}
+        <div
+          className={`flex h-8 w-8 items-center justify-center rounded-lg ${connected ? "text-emerald-400" : "text-[var(--muted-foreground)]"}`}
+          title={connected ? "Server connected" : "Server disconnected"}
         >
-          <Play className="h-3.5 w-3.5" />
-          Run
-        </button>
+          {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
+        </div>
+        {/* Server validation indicator */}
+        {serverValidation.loading && (
+          <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--muted-foreground)]" />
+        )}
+        {serverValidation.valid === false && !serverValidation.loading && (
+          <div title={serverValidation.error || "Server validation failed"}>
+            <ServerCrash className="h-3.5 w-3.5 text-red-400" />
+          </div>
+        )}
+        {/* Run / Cancel button */}
+        {job.loading ? (
+          <button
+            onClick={cancelJob}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-red-500 px-3 text-xs font-medium text-white transition-colors hover:bg-red-600"
+            title={`Job ${job.status || "running"} — click to cancel`}
+          >
+            <Square className="h-3.5 w-3.5" />
+            {job.status === "queued" ? "Queued" : "Cancel"}
+          </button>
+        ) : (
+          <button
+            onClick={submitJob}
+            disabled={!connected || nodeCount === 0}
+            className="flex h-8 items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 text-xs font-medium text-white transition-colors hover:bg-[var(--primary)]/90 disabled:opacity-40"
+            title={!connected ? "Connect to server first" : "Run pipeline"}
+          >
+            <Play className="h-3.5 w-3.5" />
+            Run
+          </button>
+        )}
+        {/* Job result indicator */}
+        {!job.loading && job.status === "completed" && (
+          <span className="text-[10px] text-emerald-400" title="Last job completed">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          </span>
+        )}
+        {!job.loading && job.status === "failed" && (
+          <span className="text-[10px] text-red-400" title={job.error || "Job failed"}>
+            <AlertCircle className="h-3.5 w-3.5" />
+          </span>
+        )}
       </div>
     </header>
   );
