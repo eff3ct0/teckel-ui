@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePipelineStore } from "@/stores/pipeline-store";
+import { useEffect, useMemo } from "react";
+import { usePipelineStore, type PipelineExtraSections } from "@/stores/pipeline-store";
+import { useVariablesStore } from "@/stores/variables-store";
 import { generateYaml } from "@/lib/yaml/generator";
 
 /**
- * Hook that auto-generates YAML whenever nodes, edges, or metadata change.
+ * Hook that auto-generates YAML whenever nodes, edges, metadata, or secrets change.
+ * Merges secrets from the variables store into the extra sections for YAML output.
  */
 export function useYamlSync() {
   const nodes = usePipelineStore((s) => s.nodes);
@@ -14,9 +16,35 @@ export function useYamlSync() {
   const metadata = usePipelineStore((s) => s.metadata);
   const extraSections = usePipelineStore((s) => s.extraSections);
   const setYaml = usePipelineStore((s) => s.setYaml);
+  const secrets = useVariablesStore((s) => s.secrets);
+
+  // Build the secrets YAML section from the variables store entries
+  const mergedSections = useMemo((): PipelineExtraSections => {
+    const validSecrets = secrets.filter((s) => s.alias && s.key);
+    if (validSecrets.length === 0) {
+      return extraSections;
+    }
+
+    const secretsObj: Record<string, unknown> = {
+      keys: Object.fromEntries(
+        validSecrets.map((s) => [
+          s.alias,
+          {
+            key: s.key,
+            ...(s.scope ? { scope: s.scope } : {}),
+          },
+        ]),
+      ),
+    };
+
+    return {
+      ...extraSections,
+      secrets: secretsObj,
+    };
+  }, [extraSections, secrets]);
 
   useEffect(() => {
-    const yamlStr = generateYaml(nodes, edges, name, metadata, extraSections);
+    const yamlStr = generateYaml(nodes, edges, name, metadata, mergedSections);
     setYaml(yamlStr);
-  }, [nodes, edges, name, metadata, extraSections, setYaml]);
+  }, [nodes, edges, name, metadata, mergedSections, setYaml]);
 }

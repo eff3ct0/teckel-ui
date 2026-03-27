@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
+import { useVariablesStore, type SecretEntry } from "@/stores/variables-store";
 import { parseYaml } from "@/lib/yaml/parser";
 
 export function useYamlImport() {
@@ -10,6 +11,7 @@ export function useYamlImport() {
   const setName = usePipelineStore((s) => s.setName);
   const setMetadata = usePipelineStore((s) => s.setMetadata);
   const setExtraSections = usePipelineStore((s) => s.setExtraSections);
+  const setSecrets = useVariablesStore((s) => s.setSecrets);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const importFromString = useCallback(
@@ -37,14 +39,29 @@ export function useYamlImport() {
           setName(fileName.replace(/\.(yaml|yml)$/, ""));
         }
         if (extraSections) {
-          setExtraSections(extraSections);
+          // Extract secrets from extraSections into the variables store
+          if (extraSections.secrets) {
+            const secretsData = extraSections.secrets as Record<string, unknown>;
+            const keys = (secretsData.keys || {}) as Record<string, Record<string, unknown>>;
+            const entries: SecretEntry[] = Object.entries(keys).map(([alias, v]) => ({
+              alias,
+              key: (v.key as string) || "",
+              scope: (v.scope as string) || "",
+            }));
+            setSecrets(entries);
+            // Don't pass secrets to extraSections — they'll be regenerated from the store
+            const { secrets: _, ...rest } = extraSections;
+            setExtraSections(rest);
+          } else {
+            setExtraSections(extraSections);
+          }
         }
       } catch (error) {
         console.error("Failed to parse YAML:", error);
         alert("Failed to parse YAML file. Check the console for details.");
       }
     },
-    [setNodes, setEdges, setName, setMetadata, setExtraSections],
+    [setNodes, setEdges, setName, setMetadata, setExtraSections, setSecrets],
   );
 
   const importFromFile = useCallback(() => {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useConnectionStore } from "@/stores/connection-store";
+import { useVariablesStore } from "@/stores/variables-store";
 import { createTeckelClient } from "@/lib/api/teckel-client";
 
 export interface ServerValidation {
@@ -14,12 +15,14 @@ export interface ServerValidation {
 /**
  * Hook that auto-validates YAML against the server when connected.
  * Debounces requests to avoid flooding the server on every keystroke.
+ * Passes current variables for ${VAR} substitution.
  */
 export function useServerValidation(): ServerValidation {
   const yaml = usePipelineStore((s) => s.yaml);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const autoValidate = useConnectionStore((s) => s.autoValidate);
   const connected = useConnectionStore((s) => s.connected);
+  const variables = useVariablesStore((s) => s.variables);
 
   const [valid, setValid] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +42,7 @@ export function useServerValidation(): ServerValidation {
       setLoading(true);
       try {
         const client = createTeckelClient(serverUrl);
-        const result = await client.validate(yaml);
+        const result = await client.validate(yaml, variables);
         setValid(result.valid);
         setError(result.error || null);
       } catch {
@@ -53,7 +56,7 @@ export function useServerValidation(): ServerValidation {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [yaml, serverUrl, autoValidate, connected]);
+  }, [yaml, serverUrl, autoValidate, connected, variables]);
 
   return { valid, error, loading };
 }
