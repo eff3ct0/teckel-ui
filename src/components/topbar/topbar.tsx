@@ -22,6 +22,7 @@ import {
   Sun,
   Moon,
   LayoutDashboard,
+  Settings2,
 } from "lucide-react";
 
 export function TopBar() {
@@ -32,9 +33,11 @@ export function TopBar() {
   const redo = usePipelineStore((s) => s.redo);
   const history = usePipelineStore((s) => s.history);
   const future = usePipelineStore((s) => s.future);
+  const selectNode = usePipelineStore((s) => s.selectNode);
   const toggleYamlPanel = useUIStore((s) => s.toggleYamlPanel);
   const isYamlPanelOpen = useUIStore((s) => s.isYamlPanelOpen);
   const togglePalette = useUIStore((s) => s.togglePalette);
+  const openConfigPanel = useUIStore((s) => s.openConfigPanel);
   const { importFromFile } = useYamlImport();
   const { exportToFile } = useYamlExport();
   const nodes = usePipelineStore((s) => s.nodes);
@@ -72,6 +75,17 @@ export function TopBar() {
         {isDirty && (
           <span className="h-2 w-2 rounded-full bg-[var(--primary)]" title="Unsaved changes" />
         )}
+        <div className="mx-1 h-5 w-px bg-[var(--border)]" />
+        <button
+          onClick={() => {
+            selectNode(null);
+            openConfigPanel();
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          title="Pipeline settings"
+        >
+          <Settings2 className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Center section - undo/redo + validation */}

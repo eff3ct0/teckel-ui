@@ -5,6 +5,10 @@ export const inputSchema = z.object({
   format: z.enum(["csv", "json", "parquet", "delta", "orc", "avro", "text", "jdbc"]),
   path: z.string().min(1, "Path is required"),
   options: z.record(z.string()).default({}),
+  description: z.string().default(""),
+  tags: z.array(z.string()).default([]),
+  meta: z.record(z.string()).default({}),
+  owner: z.string().default(""),
 });
 
 export const outputSchema = z.object({
@@ -13,6 +17,11 @@ export const outputSchema = z.object({
   path: z.string().min(1, "Path is required"),
   partitionBy: z.array(z.string()).default([]),
   options: z.record(z.string()).default({}),
+  description: z.string().default(""),
+  tags: z.array(z.string()).default([]),
+  meta: z.record(z.string()).default({}),
+  freshness: z.string().default(""),
+  maturity: z.enum(["high", "medium", "low", "deprecated", ""]).default(""),
 });
 
 export const selectSchema = z.object({

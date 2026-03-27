@@ -1,11 +1,16 @@
 import * as yaml from "js-yaml";
 import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
+import type { PipelineMetadata } from "@/stores/pipeline-store";
 
 interface TeckelInput {
   name: string;
   format: string;
   path: string;
   options?: Record<string, string>;
+  description?: string;
+  tags?: string[];
+  meta?: Record<string, string>;
+  owner?: string;
 }
 
 interface TeckelOutput {
@@ -15,6 +20,11 @@ interface TeckelOutput {
   path: string;
   partitionBy?: string[];
   options?: Record<string, string>;
+  description?: string;
+  tags?: string[];
+  meta?: Record<string, string>;
+  freshness?: string;
+  maturity?: string;
 }
 
 interface TeckelTransformation {
@@ -22,8 +32,20 @@ interface TeckelTransformation {
   [operation: string]: unknown;
 }
 
+interface TeckelPipelineSection {
+  name?: string;
+  namespace?: string;
+  version?: string;
+  description?: string;
+  owner?: string;
+  tags?: string[];
+  meta?: Record<string, string>;
+  schedule?: string;
+}
+
 interface TeckelPipelineDoc {
   version: string;
+  pipeline?: TeckelPipelineSection;
   input: TeckelInput[];
   transformation?: TeckelTransformation[];
   output: TeckelOutput[];
@@ -427,7 +449,33 @@ function buildTransformation(
 /**
  * Generate Teckel YAML from nodes and edges.
  */
-export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
+/**
+ * Helper to add optional metadata fields to an input/output object.
+ */
+function addMetadataFields(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  obj: any,
+  config: Record<string, unknown>,
+  fields: string[],
+) {
+  for (const field of fields) {
+    const value = config[field];
+    if (typeof value === "string" && value) {
+      obj[field] = value;
+    } else if (Array.isArray(value) && value.length > 0) {
+      obj[field] = value;
+    } else if (value && typeof value === "object" && Object.keys(value as object).length > 0) {
+      obj[field] = value;
+    }
+  }
+}
+
+export function generateYaml(
+  nodes: TeckelNode[],
+  edges: TeckelEdge[],
+  pipelineName?: string,
+  metadata?: PipelineMetadata,
+): string {
   if (nodes.length === 0) return "";
 
   const sorted = topologicalSort(nodes, edges);
@@ -451,6 +499,7 @@ export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
       if (options && Object.keys(options).length > 0) {
         input.options = options;
       }
+      addMetadataFields(input, config, ["description", "tags", "meta", "owner"]);
       inputs.push(input);
     } else if (type === "output") {
       const fromRef = getFromRef(node.id, edges, nodeMap);
@@ -468,6 +517,7 @@ export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
       if (options && Object.keys(options).length > 0) {
         output.options = options;
       }
+      addMetadataFields(output, config, ["description", "tags", "meta", "freshness", "maturity"]);
       outputs.push(output);
     } else {
       const allFromRefs = getAllFromRefs(node.id, edges, nodeMap);
@@ -479,14 +529,34 @@ export function generateYaml(nodes: TeckelNode[], edges: TeckelEdge[]): string {
     }
   }
 
-  const pipeline: TeckelPipelineDoc = {
+  // Build pipeline metadata section
+  let pipelineSection: TeckelPipelineSection | undefined;
+  if (metadata || pipelineName) {
+    const section: TeckelPipelineSection = {};
+    if (pipelineName) section.name = pipelineName;
+    if (metadata) {
+      if (metadata.namespace) section.namespace = metadata.namespace;
+      if (metadata.version) section.version = metadata.version;
+      if (metadata.description) section.description = metadata.description;
+      if (metadata.owner) section.owner = metadata.owner;
+      if (metadata.tags.length > 0) section.tags = metadata.tags;
+      if (Object.keys(metadata.meta).length > 0) section.meta = metadata.meta;
+      if (metadata.schedule) section.schedule = metadata.schedule;
+    }
+    if (Object.keys(section).length > 0) {
+      pipelineSection = section;
+    }
+  }
+
+  const doc: TeckelPipelineDoc = {
     version: "2.0",
+    ...(pipelineSection ? { pipeline: pipelineSection } : {}),
     input: inputs,
     ...(transformations.length > 0 ? { transformation: transformations } : {}),
     output: outputs,
   };
 
-  return yaml.dump(pipeline, {
+  return yaml.dump(doc, {
     indent: 2,
     lineWidth: 120,
     noRefs: true,

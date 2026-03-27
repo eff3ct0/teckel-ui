@@ -179,6 +179,39 @@ function InputForm({ config, onChange }: FormProps) {
           valuePlaceholder="value"
         />
       </div>
+      <div>
+        <Label>Description</Label>
+        <TextInput
+          value={(config.description as string) || ""}
+          onChange={(v) => onChange({ description: v })}
+          placeholder="Asset description..."
+        />
+      </div>
+      <div>
+        <Label>Owner</Label>
+        <TextInput
+          value={(config.owner as string) || ""}
+          onChange={(v) => onChange({ owner: v })}
+          placeholder="team or person"
+        />
+      </div>
+      <div>
+        <Label>Tags</Label>
+        <TagInput
+          value={(config.tags as string[]) || []}
+          onChange={(v) => onChange({ tags: v })}
+          placeholder="Add tag..."
+        />
+      </div>
+      <div>
+        <Label>Meta</Label>
+        <KeyValueEditor
+          value={(config.meta as Record<string, string>) || {}}
+          onChange={(v) => onChange({ meta: v })}
+          keyPlaceholder="key"
+          valuePlaceholder="value"
+        />
+      </div>
     </div>
   );
 }
@@ -233,6 +266,54 @@ function OutputForm({ config, onChange, nodeId }: FormProps) {
         <KeyValueEditor
           value={(config.options as Record<string, string>) || {}}
           onChange={(v) => onChange({ options: v })}
+        />
+      </div>
+      <div>
+        <Label>Description</Label>
+        <TextInput
+          value={(config.description as string) || ""}
+          onChange={(v) => onChange({ description: v })}
+          placeholder="Output description..."
+        />
+      </div>
+      <div>
+        <Label>Tags</Label>
+        <TagInput
+          value={(config.tags as string[]) || []}
+          onChange={(v) => onChange({ tags: v })}
+          placeholder="Add tag..."
+        />
+      </div>
+      <div>
+        <Label>Freshness (ISO 8601)</Label>
+        <TextInput
+          value={(config.freshness as string) || ""}
+          onChange={(v) => onChange({ freshness: v })}
+          placeholder="P1D, PT12H..."
+          mono
+        />
+      </div>
+      <div>
+        <Label>Maturity</Label>
+        <SelectInput
+          value={(config.maturity as string) || ""}
+          onChange={(v) => onChange({ maturity: v })}
+          options={[
+            { value: "", label: "Not set" },
+            { value: "high", label: "High" },
+            { value: "medium", label: "Medium" },
+            { value: "low", label: "Low" },
+            { value: "deprecated", label: "Deprecated" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Meta</Label>
+        <KeyValueEditor
+          value={(config.meta as Record<string, string>) || {}}
+          onChange={(v) => onChange({ meta: v })}
+          keyPlaceholder="key"
+          valuePlaceholder="value"
         />
       </div>
     </div>
