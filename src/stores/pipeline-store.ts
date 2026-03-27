@@ -11,9 +11,20 @@ interface HistoryEntry {
   edges: TeckelEdge[];
 }
 
+export interface PipelineMetadata {
+  namespace: string;
+  version: string;
+  description: string;
+  owner: string;
+  tags: string[];
+  meta: Record<string, string>;
+  schedule: string;
+}
+
 interface PipelineState {
   id: string;
   name: string;
+  metadata: PipelineMetadata;
   nodes: TeckelNode[];
   edges: TeckelEdge[];
   selectedNodeId: string | null;
@@ -36,15 +47,27 @@ interface PipelineState {
   setNodes: (nodes: TeckelNode[]) => void;
   setEdges: (edges: TeckelEdge[]) => void;
   setName: (name: string) => void;
+  setMetadata: (metadata: Partial<PipelineMetadata>) => void;
   setYaml: (yaml: string) => void;
   undo: () => void;
   redo: () => void;
   reset: () => void;
 }
 
+const DEFAULT_METADATA: PipelineMetadata = {
+  namespace: "",
+  version: "",
+  description: "",
+  owner: "",
+  tags: [],
+  meta: {},
+  schedule: "",
+};
+
 export const usePipelineStore = create<PipelineState>((set, get) => ({
   id: nanoid(),
   name: "Untitled Pipeline",
+  metadata: { ...DEFAULT_METADATA },
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -158,6 +181,10 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   setEdges: (edges) => set({ edges, isDirty: true }),
 
   setName: (name) => set({ name, isDirty: true }),
+  setMetadata: (partial) => set((state) => ({
+    metadata: { ...state.metadata, ...partial },
+    isDirty: true,
+  })),
   setYaml: (yaml) => set({ yaml }),
 
   undo: () => {
@@ -190,6 +217,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     set({
       id: nanoid(),
       name: "Untitled Pipeline",
+      metadata: { ...DEFAULT_METADATA },
       nodes: [],
       edges: [],
       selectedNodeId: null,

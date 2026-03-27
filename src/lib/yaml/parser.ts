@@ -3,9 +3,21 @@ import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import { nanoid } from "@/lib/utils/id";
 
+export interface ParsedPipelineMetadata {
+  name: string;
+  namespace: string;
+  version: string;
+  description: string;
+  owner: string;
+  tags: string[];
+  meta: Record<string, string>;
+  schedule: string;
+}
+
 interface ParsedPipeline {
   nodes: TeckelNode[];
   edges: TeckelEdge[];
+  metadata?: ParsedPipelineMetadata;
 }
 
 interface RawInput {
@@ -13,6 +25,10 @@ interface RawInput {
   format?: string;
   path?: string;
   options?: Record<string, string>;
+  description?: string;
+  tags?: string[];
+  meta?: Record<string, string>;
+  owner?: string;
 }
 
 interface RawOutput {
@@ -22,6 +38,11 @@ interface RawOutput {
   path?: string;
   partitionBy?: string[];
   options?: Record<string, string>;
+  description?: string;
+  tags?: string[];
+  meta?: Record<string, string>;
+  freshness?: string;
+  maturity?: string;
 }
 
 interface RawTransformation {
@@ -355,12 +376,29 @@ function extractSourceRefs(
 export function parseYaml(yamlString: string): ParsedPipeline {
   const doc = yaml.load(yamlString) as {
     version?: string;
+    pipeline?: Record<string, unknown>;
     input?: RawInput[];
     transformation?: RawTransformation[];
     output?: RawOutput[];
   };
 
   if (!doc) return { nodes: [], edges: [] };
+
+  // Parse pipeline metadata section
+  let metadata: ParsedPipelineMetadata | undefined;
+  if (doc.pipeline) {
+    const p = doc.pipeline;
+    metadata = {
+      name: (p.name as string) || "",
+      namespace: (p.namespace as string) || "",
+      version: (p.version as string) || "",
+      description: (p.description as string) || "",
+      owner: (p.owner as string) || "",
+      tags: (p.tags as string[]) || [],
+      meta: (p.meta as Record<string, string>) || {},
+      schedule: (p.schedule as string) || "",
+    };
+  }
 
   const nodes: TeckelNode[] = [];
   const edges: TeckelEdge[] = [];
@@ -383,6 +421,10 @@ export function parseYaml(yamlString: string): ParsedPipeline {
           format: input.format || "parquet",
           path: input.path || "",
           options: input.options || {},
+          description: input.description || "",
+          tags: input.tags || [],
+          meta: input.meta || {},
+          owner: input.owner || "",
         },
         validationErrors: [],
       },
@@ -455,6 +497,11 @@ export function parseYaml(yamlString: string): ParsedPipeline {
           path: output.path || "",
           partitionBy: output.partitionBy || [],
           options: output.options || {},
+          description: output.description || "",
+          tags: output.tags || [],
+          meta: output.meta || {},
+          freshness: output.freshness || "",
+          maturity: output.maturity || "",
         },
         validationErrors: [],
       },
@@ -472,5 +519,5 @@ export function parseYaml(yamlString: string): ParsedPipeline {
     yPos += 120;
   }
 
-  return { nodes, edges };
+  return { nodes, edges, ...(metadata ? { metadata } : {}) };
 }

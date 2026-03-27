@@ -7,7 +7,8 @@ import { useResize } from "@/hooks/use-resize";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import { NODE_SCHEMAS } from "@/lib/nodes/schemas";
 import { NodeConfigForm } from "@/components/config/node-forms";
-import { X, AlertCircle, GripVertical } from "lucide-react";
+import { PipelineMetadataForm } from "@/components/config/pipeline-metadata-form";
+import { X, AlertCircle, GripVertical, Settings2 } from "lucide-react";
 
 export function ConfigPanel() {
   const selectedNodeId = usePipelineStore((s) => s.selectedNodeId);
@@ -35,7 +36,40 @@ export function ConfigPanel() {
     return result.error.errors.map((e) => `${e.path.join(".")}: ${e.message}`);
   }, [selectedNode]);
 
-  if (!isOpen || !selectedNode) return null;
+  if (!isOpen) return null;
+
+  // Show pipeline metadata when no node is selected
+  if (!selectedNode) {
+    return (
+      <aside className="flex h-full shrink-0" style={{ width }}>
+        <div
+          onMouseDown={onResizeStart}
+          className="group flex w-2 cursor-col-resize items-center justify-center hover:bg-[var(--primary)]/10"
+        >
+          <GripVertical className="h-4 w-4 text-[var(--muted-foreground)] opacity-0 transition-opacity group-hover:opacity-100" />
+        </div>
+        <div className="flex flex-1 flex-col border-l border-[var(--border)] bg-[var(--card)]">
+          <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--primary)]/10">
+                <Settings2 className="h-3.5 w-3.5 text-[var(--primary)]" />
+              </div>
+              <span className="text-sm font-semibold text-[var(--foreground)]">Pipeline</span>
+            </div>
+            <button
+              onClick={close}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4">
+            <PipelineMetadataForm />
+          </div>
+        </div>
+      </aside>
+    );
+  }
 
   const def = NODE_REGISTRY[selectedNode.data.teckelType];
   const Icon = def.icon;

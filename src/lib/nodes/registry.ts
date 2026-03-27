@@ -52,7 +52,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "sources",
     color: "#10b981",
     icon: Database,
-    defaultConfig: { format: "parquet", path: "", options: {} },
+    defaultConfig: { format: "parquet", path: "", options: {}, description: "", tags: [], meta: {}, owner: "" },
   },
   output: {
     type: "output",
@@ -60,7 +60,7 @@ export const NODE_REGISTRY: Record<TeckelNodeType, NodeDefinition> = {
     category: "sinks",
     color: "#f43f5e",
     icon: Download,
-    defaultConfig: { format: "parquet", mode: "overwrite", path: "", partitionBy: [], options: {} },
+    defaultConfig: { format: "parquet", mode: "overwrite", path: "", partitionBy: [], options: {}, description: "", tags: [], meta: {}, freshness: "", maturity: "" },
   },
   select: {
     type: "select",
