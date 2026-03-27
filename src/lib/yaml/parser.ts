@@ -56,6 +56,16 @@ function detectTransformType(transform: RawTransformation): TeckelNodeType | nul
     unpivot: "unpivot",
     repartition: "repartition",
     coalesce: "coalesce",
+    flatten: "flatten",
+    conditional: "conditional",
+    split: "split",
+    rollup: "rollup",
+    cube: "cube",
+    scd2: "scd2",
+    enrich: "enrich",
+    schemaEnforce: "schemaEnforce",
+    assertion: "assertion",
+    custom: "custom",
   };
 
   for (const key of keys) {
@@ -187,6 +197,85 @@ function extractConfig(
       return { numPartitions: op.numPartitions || 1, columns: op.columns || [] };
     case "coalesce":
       return { numPartitions: op.numPartitions || 1 };
+    case "flatten":
+      return {
+        separator: (op.separator as string) || "_",
+        explodeArrays: op.explodeArrays === true,
+      };
+    case "conditional": {
+      const branches = (op.branches as Array<Record<string, unknown>>) || [];
+      return {
+        outputColumn: (op.outputColumn as string) || "",
+        branches: branches.map((b) => ({
+          condition: (b.condition as string) || "",
+          value: (b.value as string) || "",
+        })),
+        otherwise: (op.otherwise as string) || "",
+      };
+    }
+    case "split":
+      return {
+        condition: (op.condition as string) || "",
+        pass: (op.pass as string) || "",
+        fail: (op.fail as string) || "",
+      };
+    case "rollup":
+      return {
+        by: op.by || [],
+        agg: op.agg || [],
+      };
+    case "cube":
+      return {
+        by: op.by || [],
+        agg: op.agg || [],
+      };
+    case "scd2":
+      return {
+        keyColumns: op.keyColumns || [],
+        trackColumns: op.trackColumns || [],
+        startDateColumn: (op.startDateColumn as string) || "",
+        endDateColumn: (op.endDateColumn as string) || "",
+        currentFlagColumn: (op.currentFlagColumn as string) || "",
+      };
+    case "enrich":
+      return {
+        url: (op.url as string) || "",
+        method: (op.method as string) || "GET",
+        keyColumn: (op.keyColumn as string) || "",
+        responseColumn: (op.responseColumn as string) || "",
+        headers: (op.headers as Record<string, string>) || {},
+        onError: (op.onError as string) || "null",
+        timeout: (op.timeout as number) || 30000,
+        maxRetries: (op.maxRetries as number) || 3,
+      };
+    case "schemaEnforce": {
+      const cols = (op.columns as Array<Record<string, unknown>>) || [];
+      return {
+        mode: (op.mode as string) || "strict",
+        columns: cols.map((c) => ({
+          name: (c.name as string) || "",
+          dataType: (c.dataType as string) || "",
+          nullable: c.nullable !== false,
+          ...(c.default ? { default: c.default } : {}),
+        })),
+      };
+    }
+    case "assertion": {
+      const checks = (op.checks as Array<Record<string, unknown>>) || [];
+      return {
+        checks: checks.map((c) => ({
+          column: (c.column as string) || "",
+          rule: (c.rule as string) || "",
+          description: (c.description as string) || "",
+        })),
+        onFailure: (op.onFailure as string) || "fail",
+      };
+    }
+    case "custom":
+      return {
+        component: (op.component as string) || "",
+        options: (op.options as Record<string, string>) || {},
+      };
     default:
       return {};
   }
@@ -249,6 +338,12 @@ function extractSourceRefs(
   if (type === "except") {
     if (typeof op.left === "string" && !refs.includes(op.left)) refs.push(op.left);
     if (typeof op.right === "string" && !refs.includes(op.right)) refs.push(op.right);
+  }
+
+  // SCD2: "current" + "incoming"
+  if (type === "scd2") {
+    if (typeof op.current === "string" && !refs.includes(op.current)) refs.push(op.current);
+    if (typeof op.incoming === "string" && !refs.includes(op.incoming)) refs.push(op.incoming);
   }
 
   return refs;

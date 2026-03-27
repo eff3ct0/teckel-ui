@@ -24,6 +24,16 @@ export const TECKEL_NODE_TYPES = [
   "unpivot",
   "repartition",
   "coalesce",
+  "flatten",
+  "conditional",
+  "split",
+  "rollup",
+  "cube",
+  "scd2",
+  "enrich",
+  "schemaEnforce",
+  "assertion",
+  "custom",
 ] as const;
 
 export type TeckelNodeType = (typeof TECKEL_NODE_TYPES)[number];
@@ -36,6 +46,7 @@ export type NodeCategory =
   | "aggregation"
   | "joins-sets"
   | "reshaping"
+  | "quality"
   | "advanced";
 
 export interface TeckelNodeData extends Record<string, unknown> {

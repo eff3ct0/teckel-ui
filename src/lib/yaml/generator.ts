@@ -316,6 +316,108 @@ function buildTransformation(
         numPartitions: (config.numPartitions as number) || 1,
       },
     }),
+    flatten: () => {
+      const separator = (config.separator as string) || "_";
+      const explodeArrays = config.explodeArrays === true;
+      return {
+        name: node.data.ref,
+        flatten: {
+          from: fromRef,
+          ...(separator !== "_" ? { separator } : {}),
+          ...(explodeArrays ? { explodeArrays: true } : {}),
+        },
+      };
+    },
+    conditional: () => ({
+      name: node.data.ref,
+      conditional: {
+        from: fromRef,
+        outputColumn: (config.outputColumn as string) || "",
+        branches: (config.branches as Array<{ condition: string; value: string }>) || [],
+        ...((config.otherwise as string) ? { otherwise: config.otherwise } : {}),
+      },
+    }),
+    split: () => ({
+      name: node.data.ref,
+      split: {
+        from: fromRef,
+        condition: (config.condition as string) || "",
+        pass: (config.pass as string) || "",
+        fail: (config.fail as string) || "",
+      },
+    }),
+    rollup: () => ({
+      name: node.data.ref,
+      rollup: {
+        from: fromRef,
+        by: (config.by as string[]) || [],
+        agg: (config.agg as string[]) || [],
+      },
+    }),
+    cube: () => ({
+      name: node.data.ref,
+      cube: {
+        from: fromRef,
+        by: (config.by as string[]) || [],
+        agg: (config.agg as string[]) || [],
+      },
+    }),
+    scd2: () => ({
+      name: node.data.ref,
+      scd2: {
+        current: allFromRefs[0] || "",
+        incoming: allFromRefs[1] || "",
+        keyColumns: (config.keyColumns as string[]) || [],
+        trackColumns: (config.trackColumns as string[]) || [],
+        startDateColumn: (config.startDateColumn as string) || "",
+        endDateColumn: (config.endDateColumn as string) || "",
+        currentFlagColumn: (config.currentFlagColumn as string) || "",
+      },
+    }),
+    enrich: () => {
+      const headers = (config.headers as Record<string, string>) || {};
+      return {
+        name: node.data.ref,
+        enrich: {
+          from: fromRef,
+          url: (config.url as string) || "",
+          method: (config.method as string) || "GET",
+          keyColumn: (config.keyColumn as string) || "",
+          responseColumn: (config.responseColumn as string) || "",
+          ...(Object.keys(headers).length > 0 ? { headers } : {}),
+          onError: (config.onError as string) || "null",
+          timeout: (config.timeout as number) || 30000,
+          maxRetries: (config.maxRetries as number) || 3,
+        },
+      };
+    },
+    schemaEnforce: () => ({
+      name: node.data.ref,
+      schemaEnforce: {
+        from: fromRef,
+        mode: (config.mode as string) || "strict",
+        columns: (config.columns as Array<{ name: string; dataType: string; nullable: boolean; default?: string }>) || [],
+      },
+    }),
+    assertion: () => ({
+      name: node.data.ref,
+      assertion: {
+        from: fromRef,
+        checks: (config.checks as Array<{ column: string; rule: string; description: string }>) || [],
+        onFailure: (config.onFailure as string) || "fail",
+      },
+    }),
+    custom: () => {
+      const options = (config.options as Record<string, string>) || {};
+      return {
+        name: node.data.ref,
+        custom: {
+          from: fromRef,
+          component: (config.component as string) || "",
+          ...(Object.keys(options).length > 0 ? { options } : {}),
+        },
+      };
+    },
   };
 
   const builder = TRANSFORM_MAP[type];
