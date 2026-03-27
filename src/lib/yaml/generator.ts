@@ -1,6 +1,6 @@
 import * as yaml from "js-yaml";
 import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
-import type { PipelineMetadata } from "@/stores/pipeline-store";
+import type { PipelineMetadata, PipelineExtraSections } from "@/stores/pipeline-store";
 
 interface TeckelInput {
   name: string;
@@ -46,9 +46,17 @@ interface TeckelPipelineSection {
 interface TeckelPipelineDoc {
   version: string;
   pipeline?: TeckelPipelineSection;
+  config?: Record<string, unknown>;
+  secrets?: Record<string, unknown>;
+  hooks?: Record<string, unknown>;
+  quality?: unknown[];
+  templates?: unknown[];
   input: TeckelInput[];
+  streamingInput?: unknown[];
   transformation?: TeckelTransformation[];
   output: TeckelOutput[];
+  streamingOutput?: unknown[];
+  exposures?: unknown[];
 }
 
 /**
@@ -475,6 +483,7 @@ export function generateYaml(
   edges: TeckelEdge[],
   pipelineName?: string,
   metadata?: PipelineMetadata,
+  extraSections?: PipelineExtraSections,
 ): string {
   if (nodes.length === 0) return "";
 
@@ -551,9 +560,17 @@ export function generateYaml(
   const doc: TeckelPipelineDoc = {
     version: "2.0",
     ...(pipelineSection ? { pipeline: pipelineSection } : {}),
+    ...(extraSections?.config ? { config: extraSections.config } : {}),
+    ...(extraSections?.secrets ? { secrets: extraSections.secrets } : {}),
+    ...(extraSections?.hooks ? { hooks: extraSections.hooks } : {}),
+    ...(extraSections?.quality ? { quality: extraSections.quality } : {}),
+    ...(extraSections?.templates ? { templates: extraSections.templates } : {}),
     input: inputs,
+    ...(extraSections?.streamingInput ? { streamingInput: extraSections.streamingInput } : {}),
     ...(transformations.length > 0 ? { transformation: transformations } : {}),
     output: outputs,
+    ...(extraSections?.streamingOutput ? { streamingOutput: extraSections.streamingOutput } : {}),
+    ...(extraSections?.exposures ? { exposures: extraSections.exposures } : {}),
   };
 
   return yaml.dump(doc, {

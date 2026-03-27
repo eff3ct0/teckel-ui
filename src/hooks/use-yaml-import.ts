@@ -9,12 +9,13 @@ export function useYamlImport() {
   const setEdges = usePipelineStore((s) => s.setEdges);
   const setName = usePipelineStore((s) => s.setName);
   const setMetadata = usePipelineStore((s) => s.setMetadata);
+  const setExtraSections = usePipelineStore((s) => s.setExtraSections);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const importFromString = useCallback(
     (yamlString: string, fileName?: string) => {
       try {
-        const { nodes, edges, metadata } = parseYaml(yamlString);
+        const { nodes, edges, metadata, extraSections } = parseYaml(yamlString);
         setNodes(nodes);
         setEdges(edges);
         if (metadata) {
@@ -35,12 +36,15 @@ export function useYamlImport() {
         } else if (fileName) {
           setName(fileName.replace(/\.(yaml|yml)$/, ""));
         }
+        if (extraSections) {
+          setExtraSections(extraSections);
+        }
       } catch (error) {
         console.error("Failed to parse YAML:", error);
         alert("Failed to parse YAML file. Check the console for details.");
       }
     },
-    [setNodes, setEdges, setName, setMetadata],
+    [setNodes, setEdges, setName, setMetadata, setExtraSections],
   );
 
   const importFromFile = useCallback(() => {

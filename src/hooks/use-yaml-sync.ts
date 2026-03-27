@@ -12,10 +12,11 @@ export function useYamlSync() {
   const edges = usePipelineStore((s) => s.edges);
   const name = usePipelineStore((s) => s.name);
   const metadata = usePipelineStore((s) => s.metadata);
+  const extraSections = usePipelineStore((s) => s.extraSections);
   const setYaml = usePipelineStore((s) => s.setYaml);
 
   useEffect(() => {
-    const yamlStr = generateYaml(nodes, edges, name, metadata);
+    const yamlStr = generateYaml(nodes, edges, name, metadata, extraSections);
     setYaml(yamlStr);
-  }, [nodes, edges, name, metadata, setYaml]);
+  }, [nodes, edges, name, metadata, extraSections, setYaml]);
 }

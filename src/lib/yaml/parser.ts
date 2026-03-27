@@ -3,6 +3,8 @@ import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import { nanoid } from "@/lib/utils/id";
 
+import type { PipelineExtraSections } from "@/stores/pipeline-store";
+
 export interface ParsedPipelineMetadata {
   name: string;
   namespace: string;
@@ -18,6 +20,7 @@ interface ParsedPipeline {
   nodes: TeckelNode[];
   edges: TeckelEdge[];
   metadata?: ParsedPipelineMetadata;
+  extraSections?: Partial<PipelineExtraSections>;
 }
 
 interface RawInput {
@@ -377,9 +380,17 @@ export function parseYaml(yamlString: string): ParsedPipeline {
   const doc = yaml.load(yamlString) as {
     version?: string;
     pipeline?: Record<string, unknown>;
+    config?: Record<string, unknown>;
+    secrets?: Record<string, unknown>;
+    hooks?: Record<string, unknown>;
+    quality?: unknown[];
+    templates?: unknown[];
     input?: RawInput[];
+    streamingInput?: unknown[];
     transformation?: RawTransformation[];
     output?: RawOutput[];
+    streamingOutput?: unknown[];
+    exposures?: unknown[];
   };
 
   if (!doc) return { nodes: [], edges: [] };
@@ -399,6 +410,17 @@ export function parseYaml(yamlString: string): ParsedPipeline {
       schedule: (p.schedule as string) || "",
     };
   }
+
+  // Parse extra top-level sections (roundtrip as raw data)
+  const extraSections: Partial<PipelineExtraSections> = {};
+  if (doc.config) extraSections.config = doc.config;
+  if (doc.secrets) extraSections.secrets = doc.secrets;
+  if (doc.hooks) extraSections.hooks = doc.hooks;
+  if (doc.quality) extraSections.quality = doc.quality;
+  if (doc.templates) extraSections.templates = doc.templates;
+  if (doc.streamingInput) extraSections.streamingInput = doc.streamingInput;
+  if (doc.streamingOutput) extraSections.streamingOutput = doc.streamingOutput;
+  if (doc.exposures) extraSections.exposures = doc.exposures;
 
   const nodes: TeckelNode[] = [];
   const edges: TeckelEdge[] = [];
@@ -519,5 +541,10 @@ export function parseYaml(yamlString: string): ParsedPipeline {
     yPos += 120;
   }
 
-  return { nodes, edges, ...(metadata ? { metadata } : {}) };
+  return {
+    nodes,
+    edges,
+    ...(metadata ? { metadata } : {}),
+    ...(Object.keys(extraSections).length > 0 ? { extraSections } : {}),
+  };
 }
