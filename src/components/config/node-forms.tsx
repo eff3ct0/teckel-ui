@@ -984,6 +984,525 @@ function CoalesceForm({ config, onChange }: FormProps) {
   );
 }
 
+function FlattenForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Separator</Label>
+        <TextInput
+          value={(config.separator as string) || "_"}
+          onChange={(v) => onChange({ separator: v })}
+          placeholder="_"
+          mono
+        />
+      </div>
+      <div>
+        <CheckboxInput
+          value={(config.explodeArrays as boolean) || false}
+          onChange={(v) => onChange({ explodeArrays: v })}
+          label="Explode arrays (one row per element)"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ConditionalForm({ config, onChange }: FormProps) {
+  const branches = (config.branches as Array<{ condition: string; value: string }>) || [];
+
+  const addBranch = () => onChange({ branches: [...branches, { condition: "", value: "" }] });
+  const removeBranch = (i: number) => onChange({ branches: branches.filter((_, idx) => idx !== i) });
+  const updateBranch = (i: number, field: string, value: string) => {
+    const next = branches.map((b, idx) => (idx === i ? { ...b, [field]: value } : b));
+    onChange({ branches: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Output Column</Label>
+        <TextInput
+          value={(config.outputColumn as string) || ""}
+          onChange={(v) => onChange({ outputColumn: v })}
+          placeholder="result_column"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Branches (CASE WHEN)</Label>
+        <div className="space-y-1.5">
+          {branches.map((b, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={b.condition}
+                  onChange={(e) => updateBranch(i, "condition", e.target.value)}
+                  placeholder="WHEN condition"
+                  className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeBranch(i)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              <input
+                value={b.value}
+                onChange={(e) => updateBranch(i, "value", e.target.value)}
+                placeholder="THEN value"
+                className="h-7 w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addBranch}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add branch
+          </button>
+        </div>
+      </div>
+      <div>
+        <Label>Otherwise (ELSE)</Label>
+        <TextInput
+          value={(config.otherwise as string) || ""}
+          onChange={(v) => onChange({ otherwise: v })}
+          placeholder="default value (optional)"
+          mono
+        />
+      </div>
+    </div>
+  );
+}
+
+function SplitForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Condition</Label>
+        <CodeInput
+          value={(config.condition as string) || ""}
+          onChange={(v) => onChange({ condition: v })}
+          placeholder="e.g. status = 'active'"
+        />
+      </div>
+      <div>
+        <Label>Pass Ref (condition = true)</Label>
+        <TextInput
+          value={(config.pass as string) || ""}
+          onChange={(v) => onChange({ pass: v })}
+          placeholder="pass_asset_name"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Fail Ref (condition = false/null)</Label>
+        <TextInput
+          value={(config.fail as string) || ""}
+          onChange={(v) => onChange({ fail: v })}
+          placeholder="fail_asset_name"
+          mono
+        />
+      </div>
+    </div>
+  );
+}
+
+function RollupForm({ config, onChange }: FormProps) {
+  const agg = (config.agg as string[]) || [];
+  const addAgg = () => onChange({ agg: [...agg, ""] });
+  const removeAgg = (i: number) => onChange({ agg: agg.filter((_, idx) => idx !== i) });
+  const updateAgg = (i: number, value: string) => {
+    onChange({ agg: agg.map((a, idx) => (idx === i ? value : a)) });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Rollup By</Label>
+        <TagInput
+          value={(config.by as string[]) || []}
+          onChange={(v) => onChange({ by: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>Aggregations</Label>
+        <div className="space-y-1.5">
+          {agg.map((a, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={a}
+                onChange={(e) => updateAgg(i, e.target.value)}
+                placeholder="sum(amount) as total"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button type="button" onClick={() => removeAgg(i)} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button type="button" onClick={addAgg} className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]">
+            <Plus className="h-3 w-3" />
+            Add aggregation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CubeForm({ config, onChange }: FormProps) {
+  const agg = (config.agg as string[]) || [];
+  const addAgg = () => onChange({ agg: [...agg, ""] });
+  const removeAgg = (i: number) => onChange({ agg: agg.filter((_, idx) => idx !== i) });
+  const updateAgg = (i: number, value: string) => {
+    onChange({ agg: agg.map((a, idx) => (idx === i ? value : a)) });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Cube By</Label>
+        <TagInput
+          value={(config.by as string[]) || []}
+          onChange={(v) => onChange({ by: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>Aggregations</Label>
+        <div className="space-y-1.5">
+          {agg.map((a, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={a}
+                onChange={(e) => updateAgg(i, e.target.value)}
+                placeholder="sum(amount) as total"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button type="button" onClick={() => removeAgg(i)} className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button type="button" onClick={addAgg} className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]">
+            <Plus className="h-3 w-3" />
+            Add aggregation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Scd2Form({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Key Columns (business key)</Label>
+        <TagInput
+          value={(config.keyColumns as string[]) || []}
+          onChange={(v) => onChange({ keyColumns: v })}
+          placeholder="Add key column..."
+        />
+      </div>
+      <div>
+        <Label>Track Columns (change detection)</Label>
+        <TagInput
+          value={(config.trackColumns as string[]) || []}
+          onChange={(v) => onChange({ trackColumns: v })}
+          placeholder="Add track column..."
+        />
+      </div>
+      <div>
+        <Label>Start Date Column</Label>
+        <TextInput
+          value={(config.startDateColumn as string) || ""}
+          onChange={(v) => onChange({ startDateColumn: v })}
+          placeholder="valid_from"
+          mono
+        />
+      </div>
+      <div>
+        <Label>End Date Column</Label>
+        <TextInput
+          value={(config.endDateColumn as string) || ""}
+          onChange={(v) => onChange({ endDateColumn: v })}
+          placeholder="valid_to"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Current Flag Column</Label>
+        <TextInput
+          value={(config.currentFlagColumn as string) || ""}
+          onChange={(v) => onChange({ currentFlagColumn: v })}
+          placeholder="is_current"
+          mono
+        />
+      </div>
+    </div>
+  );
+}
+
+function EnrichForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>URL</Label>
+        <TextInput
+          value={(config.url as string) || ""}
+          onChange={(v) => onChange({ url: v })}
+          placeholder="https://api.example.com/lookup/${keyColumn}"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Method</Label>
+        <SelectInput
+          value={(config.method as string) || "GET"}
+          onChange={(v) => onChange({ method: v })}
+          options={[
+            { value: "GET", label: "GET" },
+            { value: "POST", label: "POST" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Key Column</Label>
+        <TextInput
+          value={(config.keyColumn as string) || ""}
+          onChange={(v) => onChange({ keyColumn: v })}
+          placeholder="id"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Response Column</Label>
+        <TextInput
+          value={(config.responseColumn as string) || ""}
+          onChange={(v) => onChange({ responseColumn: v })}
+          placeholder="api_response"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Headers</Label>
+        <KeyValueEditor
+          value={(config.headers as Record<string, string>) || {}}
+          onChange={(v) => onChange({ headers: v })}
+          keyPlaceholder="header"
+          valuePlaceholder="value"
+        />
+      </div>
+      <div>
+        <Label>On Error</Label>
+        <SelectInput
+          value={(config.onError as string) || "null"}
+          onChange={(v) => onChange({ onError: v })}
+          options={[
+            { value: "null", label: "Null" },
+            { value: "fail", label: "Fail" },
+            { value: "skip", label: "Skip row" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Timeout (ms)</Label>
+        <NumberInput
+          value={(config.timeout as number) || 30000}
+          onChange={(v) => onChange({ timeout: v })}
+          min={0}
+        />
+      </div>
+      <div>
+        <Label>Max Retries</Label>
+        <NumberInput
+          value={(config.maxRetries as number) || 3}
+          onChange={(v) => onChange({ maxRetries: v })}
+          min={0}
+        />
+      </div>
+    </div>
+  );
+}
+
+function SchemaEnforceForm({ config, onChange }: FormProps) {
+  const columns = (config.columns as Array<{ name: string; dataType: string; nullable: boolean; default?: string }>) || [];
+
+  const addCol = () => onChange({ columns: [...columns, { name: "", dataType: "", nullable: true }] });
+  const removeCol = (i: number) => onChange({ columns: columns.filter((_, idx) => idx !== i) });
+  const updateCol = (i: number, field: string, value: unknown) => {
+    const next = columns.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
+    onChange({ columns: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Mode</Label>
+        <SelectInput
+          value={(config.mode as string) || "strict"}
+          onChange={(v) => onChange({ mode: v })}
+          options={[
+            { value: "strict", label: "Strict" },
+            { value: "evolve", label: "Evolve" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Schema Columns</Label>
+        <div className="space-y-1.5">
+          {columns.map((c, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={c.name}
+                  onChange={(e) => updateCol(i, "name", e.target.value)}
+                  placeholder="column name"
+                  className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <input
+                  value={c.dataType}
+                  onChange={(e) => updateCol(i, "dataType", e.target.value)}
+                  placeholder="string, int..."
+                  className="h-7 w-24 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <label className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
+                  <input
+                    type="checkbox"
+                    checked={c.nullable !== false}
+                    onChange={(e) => updateCol(i, "nullable", e.target.checked)}
+                    className="h-3 w-3"
+                  />
+                  null
+                </label>
+                <button
+                  type="button"
+                  onClick={() => removeCol(i)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addCol}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add column
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssertionForm({ config, onChange }: FormProps) {
+  const checks = (config.checks as Array<{ column: string; rule: string; description: string }>) || [];
+
+  const addCheck = () => onChange({ checks: [...checks, { column: "", rule: "", description: "" }] });
+  const removeCheck = (i: number) => onChange({ checks: checks.filter((_, idx) => idx !== i) });
+  const updateCheck = (i: number, field: string, value: string) => {
+    const next = checks.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
+    onChange({ checks: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>On Failure</Label>
+        <SelectInput
+          value={(config.onFailure as string) || "fail"}
+          onChange={(v) => onChange({ onFailure: v })}
+          options={[
+            { value: "fail", label: "Fail pipeline" },
+            { value: "warn", label: "Warn only" },
+            { value: "drop", label: "Drop failing rows" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Checks</Label>
+        <div className="space-y-1.5">
+          {checks.map((c, i) => (
+            <div key={i} className="space-y-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={c.column}
+                  onChange={(e) => updateCheck(i, "column", e.target.value)}
+                  placeholder="column (optional)"
+                  className="h-7 w-24 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <input
+                  value={c.rule}
+                  onChange={(e) => updateCheck(i, "rule", e.target.value)}
+                  placeholder="not_null, unique, or condition"
+                  className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeCheck(i)}
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+              <input
+                value={c.description}
+                onChange={(e) => updateCheck(i, "description", e.target.value)}
+                placeholder="description (optional)"
+                className="h-7 w-full rounded border border-[var(--border)] bg-[var(--background)] px-2 text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addCheck}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add check
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Component</Label>
+        <TextInput
+          value={(config.component as string) || ""}
+          onChange={(v) => onChange({ component: v })}
+          placeholder="com.example.MyTransformer"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Options</Label>
+        <KeyValueEditor
+          value={(config.options as Record<string, string>) || {}}
+          onChange={(v) => onChange({ options: v })}
+          keyPlaceholder="key"
+          valuePlaceholder="value"
+        />
+      </div>
+    </div>
+  );
+}
+
 // --- Form Registry ---
 
 const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
@@ -1010,6 +1529,16 @@ const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
   unpivot: UnpivotForm,
   repartition: RepartitionForm,
   coalesce: CoalesceForm,
+  flatten: FlattenForm,
+  conditional: ConditionalForm,
+  split: SplitForm,
+  rollup: RollupForm,
+  cube: CubeForm,
+  scd2: Scd2Form,
+  enrich: EnrichForm,
+  schemaEnforce: SchemaEnforceForm,
+  assertion: AssertionForm,
+  custom: CustomForm,
 };
 
 export function NodeConfigForm({

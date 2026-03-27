@@ -149,6 +149,85 @@ export const coalesceSchema = z.object({
   numPartitions: z.number().int().positive(),
 });
 
+export const flattenSchema = z.object({
+  separator: z.string().default("_"),
+  explodeArrays: z.boolean().default(false),
+});
+
+export const conditionalSchema = z.object({
+  outputColumn: z.string().min(1, "Output column is required"),
+  branches: z.array(
+    z.object({
+      condition: z.string().min(1),
+      value: z.string().min(1),
+    }),
+  ).min(1, "At least one branch required"),
+  otherwise: z.string().default(""),
+});
+
+export const splitSchema = z.object({
+  condition: z.string().min(1, "Condition is required"),
+  pass: z.string().min(1, "Pass ref is required"),
+  fail: z.string().min(1, "Fail ref is required"),
+});
+
+export const rollupSchema = z.object({
+  by: z.array(z.string()).min(1, "At least one column required"),
+  agg: z.array(z.string()).min(1, "At least one aggregation required"),
+});
+
+export const cubeSchema = z.object({
+  by: z.array(z.string()).min(1, "At least one column required"),
+  agg: z.array(z.string()).min(1, "At least one aggregation required"),
+});
+
+export const scd2Schema = z.object({
+  keyColumns: z.array(z.string()).min(1, "At least one key column required"),
+  trackColumns: z.array(z.string()).min(1, "At least one track column required"),
+  startDateColumn: z.string().min(1, "Start date column is required"),
+  endDateColumn: z.string().min(1, "End date column is required"),
+  currentFlagColumn: z.string().min(1, "Current flag column is required"),
+});
+
+export const enrichSchema = z.object({
+  url: z.string().min(1, "URL is required"),
+  method: z.string().default("GET"),
+  keyColumn: z.string().min(1, "Key column is required"),
+  responseColumn: z.string().min(1, "Response column is required"),
+  headers: z.record(z.string()).default({}),
+  onError: z.enum(["null", "fail", "skip"]).default("null"),
+  timeout: z.number().int().default(30000),
+  maxRetries: z.number().int().default(3),
+});
+
+export const schemaEnforceSchema = z.object({
+  mode: z.enum(["strict", "evolve"]).default("strict"),
+  columns: z.array(
+    z.object({
+      name: z.string().min(1),
+      dataType: z.string().min(1),
+      nullable: z.boolean().default(true),
+      default: z.string().optional(),
+    }),
+  ).min(1, "At least one column required"),
+});
+
+export const assertionSchema = z.object({
+  checks: z.array(
+    z.object({
+      column: z.string().default(""),
+      rule: z.string().min(1),
+      description: z.string().default(""),
+    }),
+  ).min(1, "At least one check required"),
+  onFailure: z.enum(["fail", "warn", "drop"]).default("fail"),
+});
+
+export const customSchema = z.object({
+  component: z.string().min(1, "Component identifier is required"),
+  options: z.record(z.string()).default({}),
+});
+
 export const NODE_SCHEMAS: Record<TeckelNodeType, z.ZodType> = {
   input: inputSchema,
   output: outputSchema,
@@ -173,4 +252,14 @@ export const NODE_SCHEMAS: Record<TeckelNodeType, z.ZodType> = {
   unpivot: unpivotSchema,
   repartition: repartitionSchema,
   coalesce: coalesceSchema,
+  flatten: flattenSchema,
+  conditional: conditionalSchema,
+  split: splitSchema,
+  rollup: rollupSchema,
+  cube: cubeSchema,
+  scd2: scd2Schema,
+  enrich: enrichSchema,
+  schemaEnforce: schemaEnforceSchema,
+  assertion: assertionSchema,
+  custom: customSchema,
 };
