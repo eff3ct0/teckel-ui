@@ -21,10 +21,26 @@ export interface PipelineMetadata {
   schedule: string;
 }
 
+/**
+ * Extra top-level YAML sections from teckel-spec v2.0.
+ * Stored as raw objects for roundtrip fidelity.
+ */
+export interface PipelineExtraSections {
+  config: Record<string, unknown> | null;
+  secrets: Record<string, unknown> | null;
+  hooks: Record<string, unknown> | null;
+  quality: unknown[] | null;
+  streamingInput: unknown[] | null;
+  streamingOutput: unknown[] | null;
+  exposures: unknown[] | null;
+  templates: unknown[] | null;
+}
+
 interface PipelineState {
   id: string;
   name: string;
   metadata: PipelineMetadata;
+  extraSections: PipelineExtraSections;
   nodes: TeckelNode[];
   edges: TeckelEdge[];
   selectedNodeId: string | null;
@@ -48,11 +64,23 @@ interface PipelineState {
   setEdges: (edges: TeckelEdge[]) => void;
   setName: (name: string) => void;
   setMetadata: (metadata: Partial<PipelineMetadata>) => void;
+  setExtraSections: (sections: Partial<PipelineExtraSections>) => void;
   setYaml: (yaml: string) => void;
   undo: () => void;
   redo: () => void;
   reset: () => void;
 }
+
+const DEFAULT_EXTRA_SECTIONS: PipelineExtraSections = {
+  config: null,
+  secrets: null,
+  hooks: null,
+  quality: null,
+  streamingInput: null,
+  streamingOutput: null,
+  exposures: null,
+  templates: null,
+};
 
 const DEFAULT_METADATA: PipelineMetadata = {
   namespace: "",
@@ -68,6 +96,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
   id: nanoid(),
   name: "Untitled Pipeline",
   metadata: { ...DEFAULT_METADATA },
+  extraSections: { ...DEFAULT_EXTRA_SECTIONS },
   nodes: [],
   edges: [],
   selectedNodeId: null,
@@ -185,6 +214,10 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     metadata: { ...state.metadata, ...partial },
     isDirty: true,
   })),
+  setExtraSections: (partial) => set((state) => ({
+    extraSections: { ...state.extraSections, ...partial },
+    isDirty: true,
+  })),
   setYaml: (yaml) => set({ yaml }),
 
   undo: () => {
@@ -218,6 +251,7 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
       id: nanoid(),
       name: "Untitled Pipeline",
       metadata: { ...DEFAULT_METADATA },
+      extraSections: { ...DEFAULT_EXTRA_SECTIONS },
       nodes: [],
       edges: [],
       selectedNodeId: null,
