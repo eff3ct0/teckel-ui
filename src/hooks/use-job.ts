@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useConnectionStore } from "@/stores/connection-store";
+import { useVariablesStore } from "@/stores/variables-store";
 import { createTeckelClient, type JobResponse, type JobStatus } from "@/lib/api/teckel-client";
 
 export interface JobState {
@@ -18,6 +19,7 @@ export interface JobState {
 export function useJob() {
   const yaml = usePipelineStore((s) => s.yaml);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
+  const variables = useVariablesStore((s) => s.variables);
 
   const [job, setJob] = useState<JobState>({
     jobId: null,
@@ -88,7 +90,7 @@ export function useJob() {
 
     try {
       const client = createTeckelClient(serverUrl);
-      const resp = await client.submitJob(yaml);
+      const resp = await client.submitJob(yaml, variables);
       setJob({
         jobId: resp.job_id,
         status: "queued",
@@ -110,7 +112,7 @@ export function useJob() {
         completedAt: null,
       });
     }
-  }, [yaml, serverUrl, stopPolling, startPolling]);
+  }, [yaml, serverUrl, variables, stopPolling, startPolling]);
 
   const cancelJob = useCallback(async () => {
     if (!job.jobId) return;

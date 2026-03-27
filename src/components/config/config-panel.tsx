@@ -9,9 +9,10 @@ import { NODE_SCHEMAS } from "@/lib/nodes/schemas";
 import { NodeConfigForm } from "@/components/config/node-forms";
 import { PipelineMetadataForm } from "@/components/config/pipeline-metadata-form";
 import { ConnectionPanel } from "@/components/config/connection-panel";
+import { VariablesPanel } from "@/components/config/variables-panel";
 import { X, AlertCircle, GripVertical, Settings2 } from "lucide-react";
 
-type SettingsTab = "pipeline" | "connection";
+type SettingsTab = "pipeline" | "variables" | "connection";
 
 export function ConfigPanel() {
   const selectedNodeId = usePipelineStore((s) => s.selectedNodeId);
@@ -174,22 +175,24 @@ function SettingsPanel({
         </div>
         {/* Tabs */}
         <div className="flex border-b border-[var(--border)]">
-          {(["pipeline", "connection"] as const).map((t) => (
+          {(["pipeline", "variables", "connection"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`flex-1 px-3 py-2 text-xs font-medium transition-colors ${
+              className={`flex-1 px-3 py-2 text-xs font-medium capitalize transition-colors ${
                 tab === t
                   ? "border-b-2 border-[var(--primary)] text-[var(--foreground)]"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
               }`}
             >
-              {t === "pipeline" ? "Pipeline" : "Connection"}
+              {t}
             </button>
           ))}
         </div>
         <div className="flex-1 overflow-y-auto p-4">
-          {tab === "pipeline" ? <PipelineMetadataForm /> : <ConnectionPanel />}
+          {tab === "pipeline" && <PipelineMetadataForm />}
+          {tab === "variables" && <VariablesPanel />}
+          {tab === "connection" && <ConnectionPanel />}
         </div>
       </div>
     </aside>
