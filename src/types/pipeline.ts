@@ -49,12 +49,26 @@ export type NodeCategory =
   | "quality"
   | "advanced";
 
+export interface NodeValidationError {
+  nodeId: string;
+  severity: "error" | "warning";
+  message: string;
+}
+
+export interface ResolvedTags {
+  own: string[];
+  inherited: string[];
+  removed: string[];
+  effective: string[];
+}
+
 export interface TeckelNodeData extends Record<string, unknown> {
   label: string;
   ref: string;
   teckelType: TeckelNodeType;
   config: Record<string, unknown>;
-  validationErrors: string[];
+  validationErrors: NodeValidationError[];
+  resolvedTags?: ResolvedTags;
 }
 
 export type TeckelNode = Node<TeckelNodeData>;

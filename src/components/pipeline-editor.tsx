@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { TopBar } from "@/components/topbar/topbar";
 import { NodePalette } from "@/components/palette/node-palette";
@@ -12,7 +12,9 @@ import { usePipelineStore } from "@/stores/pipeline-store";
 import { useYamlSync } from "@/hooks/use-yaml-sync";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useAutoSave } from "@/hooks/use-auto-save";
-import type { TeckelNodeType } from "@/types/pipeline";
+import { useValidation } from "@/hooks/use-validation";
+import { resolveAllTags } from "@/lib/nodes/tag-propagation";
+import type { TeckelNodeType, NodeValidationError } from "@/types/pipeline";
 
 export function PipelineEditor() {
   useYamlSync();
@@ -21,6 +23,26 @@ export function PipelineEditor() {
   const isPaletteOpen = useUIStore((s) => s.isPaletteOpen);
   const canvasRef = useRef<HTMLDivElement>(null);
   const addNode = usePipelineStore((s) => s.addNode);
+  const nodes = usePipelineStore((s) => s.nodes);
+  const edges = usePipelineStore((s) => s.edges);
+  const setNodeValidationErrors = usePipelineStore((s) => s.setNodeValidationErrors);
+  const setNodeResolvedTags = usePipelineStore((s) => s.setNodeResolvedTags);
+
+  // Push per-node validation errors into node data
+  const { nodeErrors } = useValidation();
+  useEffect(() => {
+    const errorMap: Record<string, NodeValidationError[]> = {};
+    for (const [nodeId, errs] of nodeErrors) {
+      errorMap[nodeId] = errs;
+    }
+    setNodeValidationErrors(errorMap);
+  }, [nodeErrors, setNodeValidationErrors]);
+
+  // Resolve and push tag data into node data
+  const resolvedTags = useMemo(() => resolveAllTags(nodes, edges), [nodes, edges]);
+  useEffect(() => {
+    setNodeResolvedTags(resolvedTags);
+  }, [resolvedTags, setNodeResolvedTags]);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();

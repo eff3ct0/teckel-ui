@@ -1,9 +1,20 @@
 /**
- * Teckel server API client.
+ * Teckel server gRPC client.
  *
- * Connects to teckel-server (eff3ct0/teckel-api) for pipeline
- * validation, explain, and async job execution.
+ * Uses ConnectRPC (gRPC-Web) to communicate with the teckel gRPC server.
+ * Drop-in replacement for the previous REST client — same interface.
  */
+
+import { createPromiseClient } from "@connectrpc/connect";
+import { createGrpcWebTransport } from "@connectrpc/connect-web";
+import { TeckelService } from "./gen/teckel_connect.js";
+
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export interface ValidateResponse {
   valid: boolean;
@@ -19,8 +30,6 @@ export interface SubmitJobResponse {
   status: string;
 }
 
-export type JobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
-
 export interface JobResponse {
   id: string;
   status: JobStatus;
@@ -28,6 +37,7 @@ export interface JobResponse {
   created_at: string;
   started_at?: string;
   completed_at?: string;
+  duration_ms?: number;
 }
 
 export interface HealthResponse {
@@ -35,63 +45,100 @@ export interface HealthResponse {
   version: string;
 }
 
-async function request<T>(baseUrl: string, path: string, options?: RequestInit): Promise<T> {
-  const url = `${baseUrl.replace(/\/+$/, "")}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+export function createTeckelClient(baseUrl: string) {
+  const transport = createGrpcWebTransport({
+    baseUrl,
   });
 
-  const body = await res.json();
+  const client = createPromiseClient(TeckelService, transport);
 
-  if (!res.ok && body.error) {
-    throw new Error(body.error);
-  }
-
-  return body as T;
-}
-
-export function createTeckelClient(baseUrl: string) {
   return {
     async health(): Promise<HealthResponse> {
-      return request<HealthResponse>(baseUrl, "/api/health");
+      const res = await client.health({});
+      return { status: res.status, version: res.version };
     },
 
-    async validate(yaml: string, variables?: Record<string, string>): Promise<ValidateResponse> {
-      return request<ValidateResponse>(baseUrl, "/api/validate", {
-        method: "POST",
-        body: JSON.stringify({ yaml, variables: variables || {} }),
+    async validate(
+      yaml: string,
+      variables?: Record<string, string>,
+    ): Promise<ValidateResponse> {
+      const res = await client.validatePipeline({
+        yaml,
+        variables: variables || {},
       });
+      return {
+        valid: res.valid,
+        error: res.error || undefined,
+      };
     },
 
-    async explain(yaml: string, variables?: Record<string, string>): Promise<ExplainResponse> {
-      return request<ExplainResponse>(baseUrl, "/api/explain", {
-        method: "POST",
-        body: JSON.stringify({ yaml, variables: variables || {} }),
+    async explain(
+      yaml: string,
+      variables?: Record<string, string>,
+    ): Promise<ExplainResponse> {
+      const res = await client.explainPipeline({
+        yaml,
+        variables: variables || {},
       });
+      return { plan: res.plan };
     },
 
-    async submitJob(yaml: string, variables?: Record<string, string>): Promise<SubmitJobResponse> {
-      return request<SubmitJobResponse>(baseUrl, "/api/jobs", {
-        method: "POST",
-        body: JSON.stringify({ yaml, variables: variables || {} }),
+    async submitJob(
+      yaml: string,
+      variables?: Record<string, string>,
+    ): Promise<SubmitJobResponse> {
+      const res = await client.submitJob({
+        yaml,
+        variables: variables || {},
       });
+      return { job_id: res.jobId, status: res.status };
     },
 
     async getJob(jobId: string): Promise<JobResponse> {
-      return request<JobResponse>(baseUrl, `/api/jobs/${jobId}`);
+      const res = await client.getJob({ jobId });
+      return mapJobResponse(res);
     },
 
     async cancelJob(jobId: string): Promise<void> {
-      await request(baseUrl, `/api/jobs/${jobId}`, { method: "DELETE" });
+      await client.cancelJob({ jobId });
+    },
+
+    async waitJob(
+      jobId: string,
+      timeout: number = 30,
+    ): Promise<JobResponse> {
+      const res = await client.waitForJob({
+        jobId,
+        timeoutSeconds: timeout,
+      });
+      return mapJobResponse(res);
     },
 
     async listJobs(): Promise<{ jobs: JobResponse[] }> {
-      return request<{ jobs: JobResponse[] }>(baseUrl, "/api/jobs");
+      const res = await client.listJobs({});
+      return { jobs: res.jobs.map(mapJobResponse) };
     },
+  };
+}
+
+function mapJobResponse(res: {
+  id: string;
+  status: string;
+  error: string;
+  createdAt: string;
+  startedAt: string;
+  completedAt: string;
+  durationMs: bigint;
+}): JobResponse {
+  return {
+    id: res.id,
+    status: res.status as JobStatus,
+    error: res.error || undefined,
+    created_at: res.createdAt,
+    started_at: res.startedAt || undefined,
+    completed_at: res.completedAt || undefined,
+    duration_ms:
+      res.durationMs >= 0 ? Number(res.durationMs) : undefined,
   };
 }
 

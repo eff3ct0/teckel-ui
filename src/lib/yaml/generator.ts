@@ -484,6 +484,7 @@ export function generateYaml(
   pipelineName?: string,
   metadata?: PipelineMetadata,
   extraSections?: PipelineExtraSections,
+  backend?: string,
 ): string {
   if (nodes.length === 0) return "";
 
@@ -557,10 +558,16 @@ export function generateYaml(
     }
   }
 
+  // Merge backend into config section
+  const configSection: Record<string, unknown> = {
+    ...(extraSections?.config || {}),
+    ...(backend ? { backend } : {}),
+  };
+
   const doc: TeckelPipelineDoc = {
     version: "2.0",
     ...(pipelineSection ? { pipeline: pipelineSection } : {}),
-    ...(extraSections?.config ? { config: extraSections.config } : {}),
+    ...(Object.keys(configSection).length > 0 ? { config: configSection } : {}),
     ...(extraSections?.secrets ? { secrets: extraSections.secrets } : {}),
     ...(extraSections?.hooks ? { hooks: extraSections.hooks } : {}),
     ...(extraSections?.quality ? { quality: extraSections.quality } : {}),

@@ -1,5 +1,10 @@
 "use client";
 
+import { useRef } from "react";
+import Editor, { OnMount } from "@monaco-editor/react";
+import { registerTeckelLanguage } from "@/lib/editor/teckel-language";
+import { useThemeStore } from "@/stores/theme-store";
+
 interface CodeInputProps {
   value: string;
   onChange: (value: string) => void;
@@ -10,17 +15,49 @@ interface CodeInputProps {
 export function CodeInput({
   value,
   onChange,
-  placeholder = "Enter expression...",
+  placeholder,
   rows = 3,
 }: CodeInputProps) {
+  const theme = useThemeStore((s) => s.theme);
+  const registeredRef = useRef(false);
+
+  const handleMount: OnMount = (_editor, monaco) => {
+    if (!registeredRef.current) {
+      registerTeckelLanguage(monaco);
+      registeredRef.current = true;
+    }
+  };
+
+  const height = rows * 20; // approximate line height
+
   return (
-    <textarea
+    <Editor
+      height={`${height}px`}
+      language="teckel"
+      theme={theme === "dark" ? "vs-dark" : "vs"}
       value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      rows={rows}
-      className="w-full resize-y rounded-md border border-[var(--border)] bg-[var(--background)] px-2.5 py-2 font-mono text-xs text-[var(--foreground)] transition-colors placeholder:text-[var(--muted-foreground)] focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
-      spellCheck={false}
+      onChange={(v) => onChange(v ?? "")}
+      onMount={handleMount}
+      options={{
+        minimap: { enabled: false },
+        lineNumbers: "off",
+        glyphMargin: false,
+        folding: false,
+        scrollBeyondLastLine: false,
+        wordWrap: "on",
+        fontSize: 13,
+        fontFamily: "var(--font-jetbrains-mono), monospace",
+        padding: { top: 8, bottom: 8 },
+        overviewRulerLanes: 0,
+        hideCursorInOverviewRuler: true,
+        scrollbar: { vertical: "hidden", horizontal: "hidden" },
+        renderLineHighlight: "none",
+        placeholder: placeholder,
+        automaticLayout: true,
+        suggestOnTriggerCharacters: true,
+        quickSuggestions: true,
+      }}
+      className="rounded-md border border-zinc-700 overflow-hidden"
     />
   );
 }

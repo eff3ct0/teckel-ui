@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useConnectionStore } from "@/stores/connection-store";
+import { useConnectionStore, type Backend } from "@/stores/connection-store";
 import { createTeckelClient } from "@/lib/api/teckel-client";
 import { Wifi, WifiOff, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
 
@@ -14,6 +14,8 @@ export function ConnectionPanel() {
   const setConnected = useConnectionStore((s) => s.setConnected);
   const lastHealthCheck = useConnectionStore((s) => s.lastHealthCheck);
   const setLastHealthCheck = useConnectionStore((s) => s.setLastHealthCheck);
+  const backend = useConnectionStore((s) => s.backend);
+  const setBackend = useConnectionStore((s) => s.setBackend);
 
   const [testing, setTesting] = useState(false);
   const [serverVersion, setServerVersion] = useState<string | null>(null);
@@ -109,6 +111,26 @@ export function ConnectionPanel() {
           </span>
         </div>
       )}
+
+      {/* Backend selector */}
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-[var(--muted-foreground)]">
+          Execution Backend
+        </label>
+        <select
+          value={backend}
+          onChange={(e) => setBackend(e.target.value as Backend)}
+          className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2.5 text-xs text-[var(--foreground)] transition-colors focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
+        >
+          <option value="datafusion">DataFusion</option>
+          <option value="polars">Polars</option>
+        </select>
+        <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+          {backend === "datafusion"
+            ? "Full feature support (31/31 transforms), SQL-compatible"
+            : "Faster for batch workloads (28/31 transforms)"}
+        </p>
+      </div>
 
       {/* Auto-validate toggle */}
       <div>

@@ -10,6 +10,11 @@ import { autoLayout } from "@/lib/layout/auto-layout";
 import { useConnectionStore } from "@/stores/connection-store";
 import { useJob } from "@/hooks/use-job";
 import { useServerValidation } from "@/hooks/use-server-validation";
+import { useHealthCheck } from "@/hooks/use-health-check";
+import { useExplain } from "@/hooks/use-explain";
+import { useJobHistory } from "@/hooks/use-job-history";
+import { ExplainPanel } from "@/components/explain/explain-panel";
+import { JobHistoryPanel } from "@/components/jobs/job-history-panel";
 import {
   Play,
   Square,
@@ -31,7 +36,17 @@ import {
   WifiOff,
   Loader2,
   ServerCrash,
+  Brain,
+  Clock,
+  LayoutTemplate,
 } from "lucide-react";
+import { TemplateGallery } from "@/components/templates/template-gallery";
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+  return `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`;
+}
 
 export function TopBar() {
   const name = usePipelineStore((s) => s.name);
@@ -63,8 +78,26 @@ export function TopBar() {
   const { errorCount, warningCount } = useValidation();
   const nodeCount = usePipelineStore((s) => s.nodes.length);
   const connected = useConnectionStore((s) => s.connected);
+  const backend = useConnectionStore((s) => s.backend);
   const { job, submitJob, cancelJob } = useJob();
   const serverValidation = useServerValidation();
+  const { status: healthStatus, showReconnected } = useHealthCheck();
+  const yaml = usePipelineStore((s) => s.yaml);
+  const isExplainPanelOpen = useUIStore((s) => s.isExplainPanelOpen);
+  const openExplainPanel = useUIStore((s) => s.openExplainPanel);
+  const closeExplainPanel = useUIStore((s) => s.closeExplainPanel);
+  const isJobHistoryOpen = useUIStore((s) => s.isJobHistoryOpen);
+  const toggleJobHistory = useUIStore((s) => s.toggleJobHistory);
+  const closeJobHistory = useUIStore((s) => s.closeJobHistory);
+  const isTemplateGalleryOpen = useUIStore((s) => s.isTemplateGalleryOpen);
+  const openTemplateGallery = useUIStore((s) => s.openTemplateGallery);
+  const closeTemplateGallery = useUIStore((s) => s.closeTemplateGallery);
+  const { plan, loading: explainLoading, error: explainError, explain } = useExplain();
+  const { jobs, loading: jobsLoading, error: jobsError, refresh: refreshJobs } = useJobHistory(isJobHistoryOpen);
+
+  const runningJobCount = jobs.filter(
+    (j) => j.status === "running" || j.status === "queued",
+  ).length;
 
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--card)] px-3">
@@ -166,6 +199,14 @@ export function TopBar() {
           <Code className="h-3.5 w-3.5" />
           YAML
         </button>
+        <button
+          onClick={openTemplateGallery}
+          className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          title="Pipeline templates"
+        >
+          <LayoutTemplate className="h-3.5 w-3.5" />
+          Templates
+        </button>
         <div className="mx-1 h-5 w-px bg-[var(--border)]" />
         <button
           onClick={importFromFile}
@@ -195,13 +236,44 @@ export function TopBar() {
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
         <div className="mx-1 h-5 w-px bg-[var(--border)]" />
-        {/* Connection indicator */}
-        <div
-          className={`flex h-8 w-8 items-center justify-center rounded-lg ${connected ? "text-emerald-400" : "text-[var(--muted-foreground)]"}`}
-          title={connected ? "Server connected" : "Server disconnected"}
+        {/* Connection health indicator */}
+        <button
+          onClick={() => {
+            selectNode(null);
+            openConfigPanel();
+          }}
+          className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          title={
+            healthStatus === "connected"
+              ? "Server connected — click to configure"
+              : healthStatus === "disconnected"
+                ? "Server disconnected — click to configure"
+                : "Checking connection..."
+          }
         >
-          {connected ? <Wifi className="h-3.5 w-3.5" /> : <WifiOff className="h-3.5 w-3.5" />}
-        </div>
+          <span
+            className={`inline-block h-2 w-2 rounded-full ${
+              healthStatus === "connected"
+                ? "bg-emerald-400"
+                : healthStatus === "disconnected"
+                  ? "bg-red-400"
+                  : "bg-amber-400 animate-pulse"
+            }`}
+          />
+          {healthStatus === "connected" ? (
+            <Wifi className="h-3.5 w-3.5 text-emerald-400" />
+          ) : healthStatus === "disconnected" ? (
+            <WifiOff className="h-3.5 w-3.5 text-red-400" />
+          ) : (
+            <Wifi className="h-3.5 w-3.5 text-amber-400" />
+          )}
+        </button>
+        {showReconnected && (
+          <span className="text-[10px] text-emerald-400 font-medium">Reconnected</span>
+        )}
+        {healthStatus === "disconnected" && !job.loading && (
+          <span className="text-[10px] text-red-400">Disconnected</span>
+        )}
         {/* Server validation indicator */}
         {serverValidation.loading && (
           <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--muted-foreground)]" />
@@ -211,6 +283,39 @@ export function TopBar() {
             <ServerCrash className="h-3.5 w-3.5 text-red-400" />
           </div>
         )}
+        {/* Explain button */}
+        <button
+          onClick={() => {
+            explain();
+            openExplainPanel();
+          }}
+          disabled={!connected || !yaml.trim()}
+          className="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)] disabled:opacity-40"
+          title={!connected ? "Connect to server first" : "Explain execution plan"}
+        >
+          <Brain className="h-3.5 w-3.5" />
+          Explain
+        </button>
+        {/* History button */}
+        <button
+          onClick={toggleJobHistory}
+          disabled={!connected}
+          className={`relative flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium transition-colors disabled:opacity-40 ${
+            isJobHistoryOpen
+              ? "bg-[var(--primary)] text-white"
+              : "text-[var(--muted-foreground)] hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          }`}
+          title="Job history"
+        >
+          <Clock className="h-3.5 w-3.5" />
+          History
+          {runningJobCount > 0 && (
+            <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-500 px-1 text-[9px] font-medium text-white">
+              {runningJobCount}
+            </span>
+          )}
+        </button>
+        <div className="mx-1 h-5 w-px bg-[var(--border)]" />
         {/* Run / Cancel button */}
         {job.loading ? (
           <button
@@ -232,18 +337,51 @@ export function TopBar() {
             Run
           </button>
         )}
-        {/* Job result indicator */}
+        {/* Job status with duration */}
+        {job.loading && job.status === "running" && (
+          <span className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Running on {backend === "polars" ? "Polars" : "DataFusion"}... ({formatDuration(job.elapsedMs)})
+          </span>
+        )}
         {!job.loading && job.status === "completed" && (
-          <span className="text-[10px] text-emerald-400" title="Last job completed">
+          <span className="flex items-center gap-1 text-[10px] text-emerald-400" title="Last job completed">
             <CheckCircle2 className="h-3.5 w-3.5" />
+            Completed in {formatDuration(job.durationMs ?? job.elapsedMs)}
           </span>
         )}
         {!job.loading && job.status === "failed" && (
-          <span className="text-[10px] text-red-400" title={job.error || "Job failed"}>
+          <span className="flex items-center gap-1 text-[10px] text-red-400" title={job.error || "Job failed"}>
             <AlertCircle className="h-3.5 w-3.5" />
+            Failed after {formatDuration(job.durationMs ?? job.elapsedMs)}
           </span>
         )}
       </div>
+
+      {/* Explain Panel */}
+      <ExplainPanel
+        plan={plan}
+        loading={explainLoading}
+        error={explainError}
+        isOpen={isExplainPanelOpen}
+        onClose={closeExplainPanel}
+      />
+
+      {/* Job History Panel */}
+      <JobHistoryPanel
+        jobs={jobs}
+        loading={jobsLoading}
+        error={jobsError}
+        isOpen={isJobHistoryOpen}
+        onClose={closeJobHistory}
+        onRefresh={refreshJobs}
+      />
+
+      {/* Template Gallery */}
+      <TemplateGallery
+        isOpen={isTemplateGalleryOpen}
+        onClose={closeTemplateGallery}
+      />
     </header>
   );
 }

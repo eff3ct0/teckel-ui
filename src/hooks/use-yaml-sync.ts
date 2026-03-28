@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { usePipelineStore, type PipelineExtraSections } from "@/stores/pipeline-store";
 import { useVariablesStore } from "@/stores/variables-store";
+import { useConnectionStore } from "@/stores/connection-store";
 import { generateYaml } from "@/lib/yaml/generator";
 
 /**
@@ -17,6 +18,7 @@ export function useYamlSync() {
   const extraSections = usePipelineStore((s) => s.extraSections);
   const setYaml = usePipelineStore((s) => s.setYaml);
   const secrets = useVariablesStore((s) => s.secrets);
+  const backend = useConnectionStore((s) => s.backend);
 
   // Build the secrets YAML section from the variables store entries
   const mergedSections = useMemo((): PipelineExtraSections => {
@@ -44,7 +46,7 @@ export function useYamlSync() {
   }, [extraSections, secrets]);
 
   useEffect(() => {
-    const yamlStr = generateYaml(nodes, edges, name, metadata, mergedSections);
+    const yamlStr = generateYaml(nodes, edges, name, metadata, mergedSections, backend);
     setYaml(yamlStr);
-  }, [nodes, edges, name, metadata, mergedSections, setYaml]);
+  }, [nodes, edges, name, metadata, mergedSections, backend, setYaml]);
 }

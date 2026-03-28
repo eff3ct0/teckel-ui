@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { nanoid } from "@/lib/utils/id";
-import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
+import type { TeckelNode, TeckelEdge, TeckelNodeType, NodeValidationError, ResolvedTags } from "@/types/pipeline";
 import { NODE_REGISTRY } from "@/lib/nodes/registry";
 import type { XYPosition, Connection } from "@xyflow/react";
 
@@ -66,6 +66,8 @@ interface PipelineState {
   setMetadata: (metadata: Partial<PipelineMetadata>) => void;
   setExtraSections: (sections: Partial<PipelineExtraSections>) => void;
   setYaml: (yaml: string) => void;
+  setNodeValidationErrors: (errorMap: Record<string, NodeValidationError[]>) => void;
+  setNodeResolvedTags: (tagMap: Record<string, ResolvedTags>) => void;
   undo: () => void;
   redo: () => void;
   reset: () => void;
@@ -219,6 +221,49 @@ export const usePipelineStore = create<PipelineState>((set, get) => ({
     isDirty: true,
   })),
   setYaml: (yaml) => set({ yaml }),
+
+  setNodeValidationErrors: (errorMap) => {
+    const { nodes } = get();
+    // Check if anything actually changed to avoid infinite update loops
+    let changed = false;
+    for (const n of nodes) {
+      const next = errorMap[n.id] ?? [];
+      const prev = n.data.validationErrors;
+      if (prev.length !== next.length || prev.some((e, i) => e.message !== next[i]?.message || e.severity !== next[i]?.severity)) {
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return;
+    set({
+      nodes: nodes.map((n) => ({
+        ...n,
+        data: { ...n.data, validationErrors: errorMap[n.id] ?? [] },
+      })),
+    });
+  },
+
+  setNodeResolvedTags: (tagMap) => {
+    const { nodes } = get();
+    // Check if anything actually changed to avoid infinite update loops
+    let changed = false;
+    for (const n of nodes) {
+      const next = tagMap[n.id];
+      const prev = n.data.resolvedTags;
+      if (!prev && !next) continue;
+      if (!prev || !next || prev.effective.join(",") !== next.effective.join(",")) {
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) return;
+    set({
+      nodes: nodes.map((n) => ({
+        ...n,
+        data: { ...n.data, resolvedTags: tagMap[n.id] },
+      })),
+    });
+  },
 
   undo: () => {
     const { history, nodes, edges, future } = get();
