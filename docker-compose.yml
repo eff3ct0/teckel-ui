@@ -1,0 +1,23 @@
+services:
+  # ── Teckel gRPC Server (Rust) ────────────────────────────
+  teckel-api:
+    build:
+      context: ../teckel-api
+      dockerfile: Dockerfile
+      additional_contexts:
+        teckel-rs: ../teckel-rs
+    ports:
+      - "50051:50051"
+    environment:
+      - RUST_LOG=info
+      - TECKEL_MAX_CONCURRENCY=4
+
+  # ── Teckel UI (Next.js) ─────────────────────────────────
+  teckel-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - teckel-api

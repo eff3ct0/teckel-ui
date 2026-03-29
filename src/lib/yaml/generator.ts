@@ -2,11 +2,28 @@ import * as yaml from "js-yaml";
 import type { TeckelNode, TeckelEdge, TeckelNodeType } from "@/types/pipeline";
 import type { PipelineMetadata, PipelineExtraSections } from "@/stores/pipeline-store";
 
+type Primitive = string | number | boolean;
+
+/**
+ * Coerce string values in an options map to their native types
+ * (boolean, number) so YAML serializes them without quotes.
+ */
+function coerceOptions(options: Record<string, string>): Record<string, Primitive> {
+  const result: Record<string, Primitive> = {};
+  for (const [key, value] of Object.entries(options)) {
+    if (value === "true") result[key] = true;
+    else if (value === "false") result[key] = false;
+    else if (value !== "" && !isNaN(Number(value))) result[key] = Number(value);
+    else result[key] = value;
+  }
+  return result;
+}
+
 interface TeckelInput {
   name: string;
   format: string;
   path: string;
-  options?: Record<string, string>;
+  options?: Record<string, Primitive>;
   description?: string;
   tags?: string[];
   meta?: Record<string, string>;
@@ -19,7 +36,7 @@ interface TeckelOutput {
   mode: string;
   path: string;
   partitionBy?: string[];
-  options?: Record<string, string>;
+  options?: Record<string, Primitive>;
   description?: string;
   tags?: string[];
   meta?: Record<string, string>;
@@ -448,6 +465,130 @@ function buildTransformation(
         },
       };
     },
+    // v3 transformations
+    offset: () => ({
+      name: node.data.ref,
+      offset: {
+        from: fromRef,
+        count: (config.count as number) || 0,
+      },
+    }),
+    tail: () => ({
+      name: node.data.ref,
+      tail: {
+        from: fromRef,
+        count: (config.count as number) || 10,
+      },
+    }),
+    fillNa: () => {
+      const columns = (config.columns as string[]) || [];
+      const values = (config.values as Record<string, string>) || {};
+      const result: Record<string, unknown> = { from: fromRef };
+      if (config.value != null && config.value !== "") result.value = config.value;
+      if (columns.length > 0) result.columns = columns;
+      if (Object.keys(values).length > 0) result.values = values;
+      return { name: node.data.ref, fillNa: result };
+    },
+    dropNa: () => {
+      const columns = (config.columns as string[]) || [];
+      const result: Record<string, unknown> = {
+        from: fromRef,
+        how: (config.how as string) || "any",
+      };
+      if (columns.length > 0) result.columns = columns;
+      if (config.minNonNulls != null) result.minNonNulls = config.minNonNulls;
+      return { name: node.data.ref, dropNa: result };
+    },
+    replace: () => ({
+      name: node.data.ref,
+      replace: {
+        from: fromRef,
+        columns: (config.columns as string[]) || [],
+        mappings: (config.mappings as Array<{ old: string; new: string }>) || [],
+      },
+    }),
+    merge: () => ({
+      name: node.data.ref,
+      merge: {
+        target: allFromRefs[0] || "",
+        source: allFromRefs[1] || "",
+        on: (config.on as string[]) || [],
+        ...(((config.whenMatched as unknown[]) || []).length > 0 ? { whenMatched: config.whenMatched } : {}),
+        ...(((config.whenNotMatched as unknown[]) || []).length > 0 ? { whenNotMatched: config.whenNotMatched } : {}),
+        ...(((config.whenNotMatchedBySource as unknown[]) || []).length > 0 ? { whenNotMatchedBySource: config.whenNotMatchedBySource } : {}),
+      },
+    }),
+    parse: () => {
+      const options = (config.options as Record<string, string>) || {};
+      return {
+        name: node.data.ref,
+        parse: {
+          from: fromRef,
+          column: (config.column as string) || "",
+          format: (config.format as string) || "json",
+          ...(Object.keys(options).length > 0 ? { options } : {}),
+        },
+      };
+    },
+    asOfJoin: () => {
+      const result: Record<string, unknown> = {
+        left: allFromRefs[0] || "",
+        right: allFromRefs[1] || "",
+        leftAsOf: (config.leftAsOf as string) || "",
+        rightAsOf: (config.rightAsOf as string) || "",
+        direction: (config.direction as string) || "backward",
+      };
+      if (config.tolerance) result.tolerance = config.tolerance;
+      if (config.allowExactMatches === false) result.allowExactMatches = false;
+      return { name: node.data.ref, asOfJoin: result };
+    },
+    lateralJoin: () => ({
+      name: node.data.ref,
+      lateralJoin: {
+        left: allFromRefs[0] || "",
+        right: allFromRefs[1] || "",
+        type: (config.type as string) || "inner",
+        on: (config.on as string[]) || [],
+      },
+    }),
+    transpose: () => ({
+      name: node.data.ref,
+      transpose: {
+        from: fromRef,
+        indexColumns: (config.indexColumns as string[]) || [],
+      },
+    }),
+    groupingSets: () => ({
+      name: node.data.ref,
+      groupingSets: {
+        from: fromRef,
+        sets: (config.sets as string[][]) || [[]],
+        agg: (config.agg as string[]) || [],
+      },
+    }),
+    describe: () => {
+      const columns = (config.columns as string[]) || [];
+      const statistics = (config.statistics as string[]) || [];
+      const result: Record<string, unknown> = { from: fromRef };
+      if (columns.length > 0) result.columns = columns;
+      if (statistics.length > 0) result.statistics = statistics;
+      return { name: node.data.ref, describe: result };
+    },
+    crosstab: () => ({
+      name: node.data.ref,
+      crosstab: {
+        from: fromRef,
+        col1: (config.col1 as string) || "",
+        col2: (config.col2 as string) || "",
+      },
+    }),
+    hint: () => ({
+      name: node.data.ref,
+      hint: {
+        from: fromRef,
+        hints: (config.hints as Array<{ name: string; parameters?: Record<string, unknown> }>) || [],
+      },
+    }),
   };
 
   const builder = TRANSFORM_MAP[type];
@@ -507,7 +648,7 @@ export function generateYaml(
       };
       const options = config.options as Record<string, string> | undefined;
       if (options && Object.keys(options).length > 0) {
-        input.options = options;
+        input.options = coerceOptions(options);
       }
       addMetadataFields(input, config, ["description", "tags", "meta", "owner"]);
       inputs.push(input);
@@ -525,7 +666,7 @@ export function generateYaml(
       }
       const options = config.options as Record<string, string> | undefined;
       if (options && Object.keys(options).length > 0) {
-        output.options = options;
+        output.options = coerceOptions(options);
       }
       addMetadataFields(output, config, ["description", "tags", "meta", "freshness", "maturity"]);
       outputs.push(output);
@@ -565,7 +706,7 @@ export function generateYaml(
   };
 
   const doc: TeckelPipelineDoc = {
-    version: "2.0",
+    version: "3.0",
     ...(pipelineSection ? { pipeline: pipelineSection } : {}),
     ...(Object.keys(configSection).length > 0 ? { config: configSection } : {}),
     ...(extraSections?.secrets ? { secrets: extraSections.secrets } : {}),

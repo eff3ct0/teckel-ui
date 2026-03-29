@@ -34,6 +34,20 @@ export const TECKEL_NODE_TYPES = [
   "schemaEnforce",
   "assertion",
   "custom",
+  "offset",
+  "tail",
+  "fillNa",
+  "dropNa",
+  "replace",
+  "merge",
+  "parse",
+  "asOfJoin",
+  "lateralJoin",
+  "transpose",
+  "groupingSets",
+  "describe",
+  "crosstab",
+  "hint",
 ] as const;
 
 export type TeckelNodeType = (typeof TECKEL_NODE_TYPES)[number];

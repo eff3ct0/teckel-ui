@@ -7,7 +7,7 @@
 
 import { createPromiseClient } from "@connectrpc/connect";
 import { createGrpcWebTransport } from "@connectrpc/connect-web";
-import { TeckelService } from "./gen/teckel_connect.js";
+import { TeckelService } from "./gen/teckel_connect";
 
 export type JobStatus =
   | "queued"
@@ -43,6 +43,17 @@ export interface JobResponse {
 export interface HealthResponse {
   status: string;
   version: string;
+}
+
+export interface FieldInfo {
+  name: string;
+  data_type: string;
+  nullable: boolean;
+}
+
+export interface InspectSourceResponse {
+  fields: FieldInfo[];
+  row_count: number;
 }
 
 export function createTeckelClient(baseUrl: string) {
@@ -106,12 +117,33 @@ export function createTeckelClient(baseUrl: string) {
     async waitJob(
       jobId: string,
       timeout: number = 30,
+      signal?: AbortSignal,
     ): Promise<JobResponse> {
-      const res = await client.waitForJob({
-        jobId,
-        timeoutSeconds: timeout,
-      });
+      const res = await client.waitForJob(
+        { jobId, timeoutSeconds: timeout },
+        signal ? { signal } : undefined,
+      );
       return mapJobResponse(res);
+    },
+
+    async inspectSource(
+      format: string,
+      path: string,
+      options?: Record<string, string>,
+    ): Promise<InspectSourceResponse> {
+      const res = await client.inspectSource({
+        format,
+        path,
+        options: options || {},
+      });
+      return {
+        fields: res.fields.map((f) => ({
+          name: f.name,
+          data_type: f.dataType,
+          nullable: f.nullable,
+        })),
+        row_count: Number(res.rowCount),
+      };
     },
 
     async listJobs(): Promise<{ jobs: JobResponse[] }> {

@@ -110,7 +110,7 @@ export function useJob() {
       try {
         let done = false;
         while (!done) {
-          const jobResp = await client.waitJob(resp.job_id, 30);
+          const jobResp = await client.waitJob(resp.job_id, 30, controller.signal);
           setJob((prev) => ({
             ...prev,
             status: jobResp.status,
@@ -128,9 +128,9 @@ export function useJob() {
             setJob((prev) => ({ ...prev, loading: false }));
           }
         }
-      } catch (e) {
+      } catch {
         stopTimer();
-        if (e instanceof DOMException && e.name === "AbortError") {
+        if (controller.signal.aborted) {
           // Cancelled by user — don't overwrite status
           setJob((prev) => ({ ...prev, loading: false }));
         } else {

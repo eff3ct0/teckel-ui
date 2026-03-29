@@ -82,17 +82,23 @@ export const windowSchema = z.object({
 export const unionSchema = z.object({
   sources: z.array(z.string()),
   all: z.boolean().default(true),
+  byName: z.boolean().default(false),
+  allowMissingColumns: z.boolean().default(false),
 });
 
 export const intersectSchema = z.object({
   sources: z.array(z.string()),
   all: z.boolean().default(false),
+  byName: z.boolean().default(false),
+  allowMissingColumns: z.boolean().default(false),
 });
 
 export const exceptSchema = z.object({
   left: z.string().default(""),
   right: z.string().default(""),
   all: z.boolean().default(false),
+  byName: z.boolean().default(false),
+  allowMissingColumns: z.boolean().default(false),
 });
 
 export const addColumnsSchema = z.object({
@@ -133,6 +139,9 @@ export const sampleSchema = z.object({
   fraction: z.number().gt(0).lte(1),
   withReplacement: z.boolean().default(false),
   seed: z.number().nullable().default(null),
+  lowerBound: z.number().nullable().default(null),
+  upperBound: z.number().nullable().default(null),
+  deterministicOrder: z.boolean().default(false),
 });
 
 export const pivotSchema = z.object({
@@ -237,6 +246,122 @@ export const customSchema = z.object({
   options: z.record(z.string()).default({}),
 });
 
+// ── v3 schemas ──────────────────────────────────────────────
+
+export const offsetSchema = z.object({
+  count: z.number().int().min(0, "Count must be >= 0"),
+});
+
+export const tailSchema = z.object({
+  count: z.number().int().min(0, "Count must be >= 0"),
+});
+
+export const fillNaSchema = z.object({
+  columns: z.array(z.string()).default([]),
+  value: z.union([z.string(), z.number(), z.boolean()]).nullable().default(null),
+  values: z.record(z.union([z.string(), z.number(), z.boolean()])).default({}),
+});
+
+export const dropNaSchema = z.object({
+  columns: z.array(z.string()).default([]),
+  how: z.enum(["any", "all"]).default("any"),
+  minNonNulls: z.number().int().nullable().default(null),
+});
+
+export const replaceSchema = z.object({
+  columns: z.array(z.string()).default([]),
+  mappings: z.array(
+    z.object({
+      old: z.union([z.string(), z.number(), z.boolean()]),
+      new: z.union([z.string(), z.number(), z.boolean()]),
+    }),
+  ).min(1, "At least one mapping required"),
+});
+
+export const mergeSchema = z.object({
+  on: z.array(z.string()).min(1, "At least one condition required"),
+  whenMatched: z.array(
+    z.object({
+      action: z.enum(["update", "insert", "delete"]),
+      condition: z.string().default(""),
+      set: z.record(z.string()).default({}),
+      star: z.boolean().default(false),
+    }),
+  ).default([]),
+  whenNotMatched: z.array(
+    z.object({
+      action: z.enum(["update", "insert", "delete"]),
+      condition: z.string().default(""),
+      set: z.record(z.string()).default({}),
+      star: z.boolean().default(false),
+    }),
+  ).default([]),
+  whenNotMatchedBySource: z.array(
+    z.object({
+      action: z.enum(["update", "insert", "delete"]),
+      condition: z.string().default(""),
+      set: z.record(z.string()).default({}),
+      star: z.boolean().default(false),
+    }),
+  ).default([]),
+});
+
+export const parseSchema = z.object({
+  column: z.string().min(1, "Column is required"),
+  format: z.enum(["json", "csv"]),
+  schema: z.array(
+    z.object({
+      name: z.string().min(1),
+      dataType: z.string().min(1),
+      nullable: z.boolean().default(true),
+    }),
+  ).default([]),
+  options: z.record(z.string()).default({}),
+});
+
+export const asOfJoinSchema = z.object({
+  leftAsOf: z.string().min(1, "Left as-of column is required"),
+  rightAsOf: z.string().min(1, "Right as-of column is required"),
+  on: z.array(z.string()).default([]),
+  type: z.enum(["inner", "left"]).default("left"),
+  direction: z.enum(["backward", "forward", "nearest"]).default("backward"),
+  tolerance: z.string().default(""),
+  allowExactMatches: z.boolean().default(true),
+});
+
+export const lateralJoinSchema = z.object({
+  type: z.enum(["inner", "left", "cross"]).default("inner"),
+  on: z.array(z.string()).default([]),
+});
+
+export const transposeSchema = z.object({
+  indexColumns: z.array(z.string()).default([]),
+});
+
+export const groupingSetsSchema = z.object({
+  sets: z.array(z.array(z.string())).min(1, "At least one grouping set required"),
+  agg: z.array(z.string()).min(1, "At least one aggregation required"),
+});
+
+export const describeSchema = z.object({
+  columns: z.array(z.string()).default([]),
+  statistics: z.array(z.string()).default([]),
+});
+
+export const crosstabSchema = z.object({
+  col1: z.string().min(1, "Column 1 is required"),
+  col2: z.string().min(1, "Column 2 is required"),
+});
+
+export const hintSchema = z.object({
+  hints: z.array(
+    z.object({
+      name: z.string().min(1, "Hint name is required"),
+      parameters: z.array(z.string()).default([]),
+    }),
+  ).min(1, "At least one hint required"),
+});
+
 export const NODE_SCHEMAS: Record<TeckelNodeType, z.ZodType> = {
   input: inputSchema,
   output: outputSchema,
@@ -271,4 +396,18 @@ export const NODE_SCHEMAS: Record<TeckelNodeType, z.ZodType> = {
   schemaEnforce: schemaEnforceSchema,
   assertion: assertionSchema,
   custom: customSchema,
+  offset: offsetSchema,
+  tail: tailSchema,
+  fillNa: fillNaSchema,
+  dropNa: dropNaSchema,
+  replace: replaceSchema,
+  merge: mergeSchema,
+  parse: parseSchema,
+  asOfJoin: asOfJoinSchema,
+  lateralJoin: lateralJoinSchema,
+  transpose: transposeSchema,
+  groupingSets: groupingSetsSchema,
+  describe: describeSchema,
+  crosstab: crosstabSchema,
+  hint: hintSchema,
 };

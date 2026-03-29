@@ -63,6 +63,7 @@ function detectTransformType(transform: RawTransformation): TeckelNodeType | nul
     where: "where",
     join: "join",
     group: "groupBy",
+    groupBy: "groupBy",
     orderBy: "orderBy",
     sql: "sql",
     window: "window",
@@ -90,6 +91,21 @@ function detectTransformType(transform: RawTransformation): TeckelNodeType | nul
     schemaEnforce: "schemaEnforce",
     assertion: "assertion",
     custom: "custom",
+    // v3 transformations
+    offset: "offset",
+    tail: "tail",
+    fillNa: "fillNa",
+    dropNa: "dropNa",
+    replace: "replace",
+    merge: "merge",
+    parse: "parse",
+    asOfJoin: "asOfJoin",
+    lateralJoin: "lateralJoin",
+    transpose: "transpose",
+    groupingSets: "groupingSets",
+    describe: "describe",
+    crosstab: "crosstab",
+    hint: "hint",
   };
 
   for (const key of keys) {
@@ -300,6 +316,84 @@ function extractConfig(
         component: (op.component as string) || "",
         options: (op.options as Record<string, string>) || {},
       };
+    // v3 transformations
+    case "offset":
+      return { count: (op.count as number) || 0 };
+    case "tail":
+      return { count: (op.count as number) || 10 };
+    case "fillNa":
+      return {
+        columns: (op.columns as string[]) || [],
+        value: op.value ?? null,
+        values: (op.values as Record<string, string>) || {},
+      };
+    case "dropNa":
+      return {
+        columns: (op.columns as string[]) || [],
+        how: (op.how as string) || "any",
+        minNonNulls: op.minNonNulls ?? null,
+      };
+    case "replace":
+      return {
+        columns: (op.columns as string[]) || [],
+        mappings: ((op.mappings as Array<Record<string, unknown>>) || []).map((m) => ({
+          old: (m.old as string) || "",
+          new: (m.new as string) || "",
+        })),
+      };
+    case "merge":
+      return {
+        on: (op.on as string[]) || [],
+        whenMatched: (op.whenMatched as unknown[]) || [],
+        whenNotMatched: (op.whenNotMatched as unknown[]) || [],
+        whenNotMatchedBySource: (op.whenNotMatchedBySource as unknown[]) || [],
+      };
+    case "parse": {
+      return {
+        column: (op.column as string) || "",
+        format: (op.format as string) || "json",
+        options: (op.options as Record<string, string>) || {},
+      };
+    }
+    case "asOfJoin":
+      return {
+        leftAsOf: (op.leftAsOf as string) || "",
+        rightAsOf: (op.rightAsOf as string) || "",
+        direction: (op.direction as string) || "backward",
+        tolerance: (op.tolerance as string) || "",
+        allowExactMatches: op.allowExactMatches !== false,
+      };
+    case "lateralJoin":
+      return {
+        type: (op.type as string) || "inner",
+        on: (op.on as string[]) || [],
+      };
+    case "transpose":
+      return {
+        indexColumns: (op.indexColumns as string[]) || [],
+      };
+    case "groupingSets":
+      return {
+        sets: (op.sets as string[][]) || [[]],
+        agg: (op.agg as string[]) || [],
+      };
+    case "describe":
+      return {
+        columns: (op.columns as string[]) || [],
+        statistics: (op.statistics as string[]) || [],
+      };
+    case "crosstab":
+      return {
+        col1: (op.col1 as string) || "",
+        col2: (op.col2 as string) || "",
+      };
+    case "hint":
+      return {
+        hints: ((op.hints as Array<Record<string, unknown>>) || []).map((h) => ({
+          name: (h.name as string) || "",
+          ...(h.parameters ? { parameters: h.parameters } : {}),
+        })),
+      };
     default:
       return {};
   }
@@ -368,6 +462,18 @@ function extractSourceRefs(
   if (type === "scd2") {
     if (typeof op.current === "string" && !refs.includes(op.current)) refs.push(op.current);
     if (typeof op.incoming === "string" && !refs.includes(op.incoming)) refs.push(op.incoming);
+  }
+
+  // Merge: "target" + "source"
+  if (type === "merge") {
+    if (typeof op.target === "string" && !refs.includes(op.target)) refs.push(op.target);
+    if (typeof op.source === "string" && !refs.includes(op.source)) refs.push(op.source);
+  }
+
+  // As-of Join / Lateral Join: "left" + "right"
+  if (type === "asOfJoin" || type === "lateralJoin") {
+    if (typeof op.left === "string" && !refs.includes(op.left)) refs.push(op.left);
+    if (typeof op.right === "string" && !refs.includes(op.right)) refs.push(op.right);
   }
 
   return refs;

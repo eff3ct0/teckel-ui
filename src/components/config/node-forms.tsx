@@ -1,12 +1,14 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import type { TeckelNodeType } from "@/types/pipeline";
 import { TagInput } from "@/components/shared/tag-input";
 import { KeyValueEditor } from "@/components/shared/key-value-editor";
 import { CodeInput } from "@/components/shared/code-input";
 import { RefSelector } from "@/components/shared/ref-selector";
-import { Plus, X } from "lucide-react";
+import { Plus, X, Search, Loader2 } from "lucide-react";
+import { createTeckelClient, type FieldInfo } from "@/lib/api/teckel-client";
+import { useConnectionStore } from "@/stores/connection-store";
 
 interface FormProps {
   config: Record<string, unknown>;
@@ -150,7 +152,63 @@ const FRAME_TYPE_OPTIONS = [
 
 // --- Individual Forms ---
 
+function SchemaTable({ fields, rowCount }: { fields: FieldInfo[]; rowCount: number }) {
+  return (
+    <div className="rounded-md border border-[var(--border)] overflow-hidden">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-[var(--border)] bg-[var(--muted)]/50">
+            <th className="px-2 py-1.5 text-left font-medium text-[var(--muted-foreground)]">Field</th>
+            <th className="px-2 py-1.5 text-left font-medium text-[var(--muted-foreground)]">Type</th>
+            <th className="px-2 py-1.5 text-center font-medium text-[var(--muted-foreground)]">Null</th>
+          </tr>
+        </thead>
+        <tbody>
+          {fields.map((f) => (
+            <tr key={f.name} className="border-b border-[var(--border)] last:border-0">
+              <td className="px-2 py-1 font-mono text-[var(--foreground)]">{f.name}</td>
+              <td className="px-2 py-1 font-mono text-[var(--muted-foreground)]">{f.data_type}</td>
+              <td className="px-2 py-1 text-center text-[var(--muted-foreground)]">{f.nullable ? "yes" : "no"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="border-t border-[var(--border)] bg-[var(--muted)]/30 px-2 py-1 text-xs text-[var(--muted-foreground)]">
+        {rowCount.toLocaleString()} rows
+      </div>
+    </div>
+  );
+}
+
 function InputForm({ config, onChange }: FormProps) {
+  const [schema, setSchema] = useState<{ fields: FieldInfo[]; rowCount: number } | null>(null);
+  const [inspecting, setInspecting] = useState(false);
+  const [inspectError, setInspectError] = useState<string | null>(null);
+  const serverUrl = useConnectionStore((s) => s.serverUrl);
+
+  const handleInspect = async () => {
+    const format = (config.format as string) || "parquet";
+    const path = (config.path as string) || "";
+    if (!path) return;
+
+    setInspecting(true);
+    setInspectError(null);
+    setSchema(null);
+    try {
+      const client = createTeckelClient(serverUrl);
+      const result = await client.inspectSource(
+        format,
+        path,
+        (config.options as Record<string, string>) || {},
+      );
+      setSchema({ fields: result.fields, rowCount: result.row_count });
+    } catch (err) {
+      setInspectError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setInspecting(false);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <div>
@@ -178,6 +236,28 @@ function InputForm({ config, onChange }: FormProps) {
           keyPlaceholder="option"
           valuePlaceholder="value"
         />
+      </div>
+      <div>
+        <button
+          onClick={handleInspect}
+          disabled={inspecting || !(config.path as string)}
+          className="flex h-7 w-full items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--muted)]/50 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--muted)] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {inspecting ? (
+            <Loader2 className="h-3 w-3 animate-spin" />
+          ) : (
+            <Search className="h-3 w-3" />
+          )}
+          {inspecting ? "Inspecting..." : "Inspect Schema"}
+        </button>
+        {inspectError && (
+          <p className="mt-1.5 text-xs text-red-500">{inspectError}</p>
+        )}
+        {schema && (
+          <div className="mt-2">
+            <SchemaTable fields={schema.fields} rowCount={schema.rowCount} />
+          </div>
+        )}
       </div>
       <div>
         <Label>Description</Label>
@@ -1584,6 +1664,574 @@ function CustomForm({ config, onChange }: FormProps) {
   );
 }
 
+// --- v3 Forms ---
+
+function OffsetForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Count</Label>
+        <NumberInput
+          value={(config.count as number) || 0}
+          onChange={(v) => onChange({ count: v })}
+          min={0}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TailForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Count</Label>
+        <NumberInput
+          value={(config.count as number) || 10}
+          onChange={(v) => onChange({ count: v })}
+          min={0}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FillNaForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Columns (optional, empty = all)</Label>
+        <TagInput
+          value={(config.columns as string[]) || []}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>Value (fill all with this)</Label>
+        <TextInput
+          value={(config.value as string) || ""}
+          onChange={(v) => onChange({ value: v })}
+          placeholder="default value"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Values (per-column fill)</Label>
+        <KeyValueEditor
+          value={(config.values as Record<string, string>) || {}}
+          onChange={(v) => onChange({ values: v })}
+          keyPlaceholder="column"
+          valuePlaceholder="fill value"
+        />
+      </div>
+    </div>
+  );
+}
+
+function DropNaForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Columns (optional, empty = all)</Label>
+        <TagInput
+          value={(config.columns as string[]) || []}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>How</Label>
+        <SelectInput
+          value={(config.how as string) || "any"}
+          onChange={(v) => onChange({ how: v })}
+          options={[
+            { value: "any", label: "Any (drop if any null)" },
+            { value: "all", label: "All (drop if all null)" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Min Non-Nulls (optional)</Label>
+        <NumberInput
+          value={(config.minNonNulls as number) || 0}
+          onChange={(v) => onChange({ minNonNulls: v || null })}
+          min={0}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReplaceForm({ config, onChange }: FormProps) {
+  const columns = (config.columns as string[]) || [];
+  const mappings = (config.mappings as Array<{ old: string; new: string }>) || [];
+
+  const addMapping = () => onChange({ mappings: [...mappings, { old: "", new: "" }] });
+  const removeMapping = (i: number) => onChange({ mappings: mappings.filter((_, idx) => idx !== i) });
+  const updateMapping = (i: number, field: string, value: string) => {
+    const next = mappings.map((m, idx) => (idx === i ? { ...m, [field]: value } : m));
+    onChange({ mappings: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Columns (optional, empty = all)</Label>
+        <TagInput
+          value={columns}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>Mappings (old → new)</Label>
+        <div className="space-y-1.5">
+          {mappings.map((m, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={m.old}
+                onChange={(e) => updateMapping(i, "old", e.target.value)}
+                placeholder="old value"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <input
+                value={m.new}
+                onChange={(e) => updateMapping(i, "new", e.target.value)}
+                placeholder="new value"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => removeMapping(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addMapping}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add mapping
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MergeForm({ config, onChange }: FormProps) {
+  const whenMatched = (config.whenMatched as Array<{ action: string; condition: string; set: Record<string, string>; star: boolean }>) || [];
+  const whenNotMatched = (config.whenNotMatched as Array<{ action: string; condition: string; set: Record<string, string>; star: boolean }>) || [];
+  const whenNotMatchedBySource = (config.whenNotMatchedBySource as Array<{ action: string; condition: string; set: Record<string, string>; star: boolean }>) || [];
+
+  const addClause = (key: string, clauses: unknown[]) => onChange({ [key]: [...clauses, { action: "update", condition: "", set: {}, star: false }] });
+  const removeClause = (key: string, clauses: unknown[], i: number) => onChange({ [key]: (clauses as unknown[]).filter((_, idx) => idx !== i) });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateClause = (key: string, clauses: any[], i: number, field: string, value: unknown) => {
+    const next = clauses.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
+    onChange({ [key]: next });
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderClauses = (label: string, key: string, clauses: any[]) => (
+    <div>
+      <Label>{label}</Label>
+      <div className="space-y-1.5">
+        {clauses.map((c, i) => (
+          <div key={i} className="space-y-1 rounded border border-[var(--border)] p-2">
+            <div className="flex items-center gap-1.5">
+              <select
+                value={c.action || "update"}
+                onChange={(e) => updateClause(key, clauses, i, "action", e.target.value)}
+                className="h-7 rounded border border-[var(--border)] bg-[var(--background)] px-1.5 text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              >
+                <option value="update">Update</option>
+                <option value="insert">Insert</option>
+                <option value="delete">Delete</option>
+              </select>
+              <input
+                value={c.condition || ""}
+                onChange={(e) => updateClause(key, clauses, i, "condition", e.target.value)}
+                placeholder="condition (optional)"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <label className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)]">
+                <input
+                  type="checkbox"
+                  checked={c.star === true}
+                  onChange={(e) => updateClause(key, clauses, i, "star", e.target.checked)}
+                  className="h-3 w-3"
+                />
+                *
+              </label>
+              <button
+                type="button"
+                onClick={() => removeClause(key, clauses, i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <KeyValueEditor
+              value={(c.set as Record<string, string>) || {}}
+              onChange={(v) => updateClause(key, clauses, i, "set", v)}
+              keyPlaceholder="column"
+              valuePlaceholder="expression"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => addClause(key, clauses)}
+          className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+        >
+          <Plus className="h-3 w-3" />
+          Add clause
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>On (join keys)</Label>
+        <TagInput
+          value={(config.on as string[]) || []}
+          onChange={(v) => onChange({ on: v })}
+          placeholder="Add key column..."
+        />
+      </div>
+      {renderClauses("When Matched", "whenMatched", whenMatched)}
+      {renderClauses("When Not Matched", "whenNotMatched", whenNotMatched)}
+      {renderClauses("When Not Matched By Source", "whenNotMatchedBySource", whenNotMatchedBySource)}
+    </div>
+  );
+}
+
+function ParseForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Column</Label>
+        <TextInput
+          value={(config.column as string) || ""}
+          onChange={(v) => onChange({ column: v })}
+          placeholder="column_name"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Format</Label>
+        <SelectInput
+          value={(config.format as string) || "json"}
+          onChange={(v) => onChange({ format: v })}
+          options={[
+            { value: "json", label: "JSON" },
+            { value: "csv", label: "CSV" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Options</Label>
+        <KeyValueEditor
+          value={(config.options as Record<string, string>) || {}}
+          onChange={(v) => onChange({ options: v })}
+          keyPlaceholder="option"
+          valuePlaceholder="value"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AsOfJoinForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Left As-Of Column</Label>
+        <TextInput
+          value={(config.leftAsOf as string) || ""}
+          onChange={(v) => onChange({ leftAsOf: v })}
+          placeholder="timestamp_column"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Right As-Of Column</Label>
+        <TextInput
+          value={(config.rightAsOf as string) || ""}
+          onChange={(v) => onChange({ rightAsOf: v })}
+          placeholder="timestamp_column"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Direction</Label>
+        <SelectInput
+          value={(config.direction as string) || "backward"}
+          onChange={(v) => onChange({ direction: v })}
+          options={[
+            { value: "backward", label: "Backward" },
+            { value: "forward", label: "Forward" },
+            { value: "nearest", label: "Nearest" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>Tolerance (optional)</Label>
+        <TextInput
+          value={(config.tolerance as string) || ""}
+          onChange={(v) => onChange({ tolerance: v })}
+          placeholder="e.g. 1 hour, 30 minutes"
+          mono
+        />
+      </div>
+      <div>
+        <CheckboxInput
+          value={config.allowExactMatches !== false}
+          onChange={(v) => onChange({ allowExactMatches: v })}
+          label="Allow exact matches"
+        />
+      </div>
+    </div>
+  );
+}
+
+function LateralJoinForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Join Type</Label>
+        <SelectInput
+          value={(config.type as string) || "inner"}
+          onChange={(v) => onChange({ type: v })}
+          options={[
+            { value: "inner", label: "Inner" },
+            { value: "left", label: "Left" },
+          ]}
+        />
+      </div>
+      <div>
+        <Label>On (conditions)</Label>
+        <TagInput
+          value={(config.on as string[]) || []}
+          onChange={(v) => onChange({ on: v })}
+          placeholder="Add condition..."
+        />
+      </div>
+    </div>
+  );
+}
+
+function TransposeForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Index Columns</Label>
+        <TagInput
+          value={(config.indexColumns as string[]) || []}
+          onChange={(v) => onChange({ indexColumns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+    </div>
+  );
+}
+
+function GroupingSetsForm({ config, onChange }: FormProps) {
+  const sets = (config.sets as string[][]) || [[]];
+  const agg = (config.agg as string[]) || [];
+
+  const addSet = () => onChange({ sets: [...sets, []] });
+  const removeSet = (i: number) => onChange({ sets: sets.filter((_, idx) => idx !== i) });
+  const updateSet = (i: number, value: string[]) => {
+    const next = sets.map((s, idx) => (idx === i ? value : s));
+    onChange({ sets: next });
+  };
+
+  const addAgg = () => onChange({ agg: [...agg, ""] });
+  const removeAgg = (i: number) => onChange({ agg: agg.filter((_, idx) => idx !== i) });
+  const updateAgg = (i: number, value: string) => {
+    onChange({ agg: agg.map((a, idx) => (idx === i ? value : a)) });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Grouping Sets</Label>
+        <div className="space-y-1.5">
+          {sets.map((s, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <div className="flex-1">
+                <TagInput
+                  value={s}
+                  onChange={(v) => updateSet(i, v)}
+                  placeholder="Add column to set..."
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => removeSet(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addSet}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add set
+          </button>
+        </div>
+      </div>
+      <div>
+        <Label>Aggregations</Label>
+        <div className="space-y-1.5">
+          {agg.map((a, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <input
+                value={a}
+                onChange={(e) => updateAgg(i, e.target.value)}
+                placeholder="sum(amount) as total"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => removeAgg(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addAgg}
+            className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+          >
+            <Plus className="h-3 w-3" />
+            Add aggregation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DescribeForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Columns (optional, empty = all)</Label>
+        <TagInput
+          value={(config.columns as string[]) || []}
+          onChange={(v) => onChange({ columns: v })}
+          placeholder="Add column..."
+        />
+      </div>
+      <div>
+        <Label>Statistics (optional)</Label>
+        <TagInput
+          value={(config.statistics as string[]) || []}
+          onChange={(v) => onChange({ statistics: v })}
+          placeholder="count, mean, stddev..."
+        />
+      </div>
+    </div>
+  );
+}
+
+function CrosstabForm({ config, onChange }: FormProps) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <Label>Column 1</Label>
+        <TextInput
+          value={(config.col1 as string) || ""}
+          onChange={(v) => onChange({ col1: v })}
+          placeholder="column_name"
+          mono
+        />
+      </div>
+      <div>
+        <Label>Column 2</Label>
+        <TextInput
+          value={(config.col2 as string) || ""}
+          onChange={(v) => onChange({ col2: v })}
+          placeholder="column_name"
+          mono
+        />
+      </div>
+    </div>
+  );
+}
+
+function HintForm({ config, onChange }: FormProps) {
+  const hints = (config.hints as Array<{ name: string; parameters?: Record<string, string> }>) || [];
+
+  const addHint = () => onChange({ hints: [...hints, { name: "" }] });
+  const removeHint = (i: number) => onChange({ hints: hints.filter((_, idx) => idx !== i) });
+  const updateHintName = (i: number, value: string) => {
+    const next = hints.map((h, idx) => (idx === i ? { ...h, name: value } : h));
+    onChange({ hints: next });
+  };
+  const updateHintParams = (i: number, value: Record<string, string>) => {
+    const next = hints.map((h, idx) => (idx === i ? { ...h, parameters: value } : h));
+    onChange({ hints: next });
+  };
+
+  return (
+    <div className="space-y-3">
+      <Label>Hints</Label>
+      <div className="space-y-1.5">
+        {hints.map((h, i) => (
+          <div key={i} className="space-y-1 rounded border border-[var(--border)] p-2">
+            <div className="flex items-center gap-1.5">
+              <input
+                value={h.name}
+                onChange={(e) => updateHintName(i, e.target.value)}
+                placeholder="hint name (e.g. broadcast)"
+                className="h-7 flex-1 rounded border border-[var(--border)] bg-[var(--background)] px-2 font-mono text-[10px] text-[var(--foreground)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button
+                type="button"
+                onClick={() => removeHint(i)}
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-[var(--muted-foreground)] transition-colors hover:bg-red-500/10 hover:text-red-400"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+            <KeyValueEditor
+              value={(h.parameters as Record<string, string>) || {}}
+              onChange={(v) => updateHintParams(i, v)}
+              keyPlaceholder="parameter"
+              valuePlaceholder="value"
+            />
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addHint}
+          className="flex h-7 items-center gap-1 rounded px-2 text-[10px] text-[var(--muted-foreground)] hover:bg-[var(--secondary)]"
+        >
+          <Plus className="h-3 w-3" />
+          Add hint
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // --- Form Registry ---
 
 const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
@@ -1620,6 +2268,21 @@ const FORM_MAP: Record<TeckelNodeType, React.ComponentType<FormProps>> = {
   schemaEnforce: SchemaEnforceForm,
   assertion: AssertionForm,
   custom: CustomForm,
+  // v3 transformations
+  offset: OffsetForm,
+  tail: TailForm,
+  fillNa: FillNaForm,
+  dropNa: DropNaForm,
+  replace: ReplaceForm,
+  merge: MergeForm,
+  parse: ParseForm,
+  asOfJoin: AsOfJoinForm,
+  lateralJoin: LateralJoinForm,
+  transpose: TransposeForm,
+  groupingSets: GroupingSetsForm,
+  describe: DescribeForm,
+  crosstab: CrosstabForm,
+  hint: HintForm,
 };
 
 export function NodeConfigForm({

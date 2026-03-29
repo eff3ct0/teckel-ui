@@ -77,7 +77,7 @@ export function ConnectionPanel() {
           <input
             value={urlDraft}
             onChange={(e) => setUrlDraft(e.target.value)}
-            placeholder="http://localhost:8080"
+            placeholder="http://localhost:50051"
             className="h-8 flex-1 rounded-md border border-[var(--border)] bg-[var(--background)] px-2.5 font-mono text-xs text-[var(--foreground)] transition-colors focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
           />
           <button
