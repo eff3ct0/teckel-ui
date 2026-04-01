@@ -602,7 +602,7 @@ function buildTransformation(
  * Helper to add optional metadata fields to an input/output object.
  */
 function addMetadataFields(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   obj: any,
   config: Record<string, unknown>,
   fields: string[],

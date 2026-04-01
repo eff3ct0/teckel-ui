@@ -2,7 +2,7 @@ import type { TeckelNode, TeckelEdge } from "@/types/pipeline";
 import { NODE_SCHEMAS } from "@/lib/nodes/schemas";
 
 /**
- * AssetRef pattern from teckel-spec v2.0:
+ * AssetRef pattern from teckel-spec v3.0:
  * Must start with a letter, only ASCII letters/digits/underscores/hyphens, 1-128 chars.
  */
 export const ASSET_REF_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]{0,127}$/;

@@ -2,7 +2,7 @@
 
 Visual drag-and-drop pipeline editor for the [Teckel](https://github.com/eff3ct0/teckel-api) ETL framework. Design data pipelines as node diagrams, configure variables and secrets, validate against the server, and execute — all from the browser.
 
-Built against the [Teckel Spec v2.0](https://github.com/eff3ct0/teckel-spec) with full YAML roundtrip fidelity.
+Built against the [Teckel Spec v3.0](https://github.com/eff3ct0/teckel-spec) with full YAML roundtrip fidelity.
 
 ## Quick Start
 
@@ -81,7 +81,7 @@ Jobs follow the lifecycle: `queued` → `running` → `completed` | `failed` | `
 3. **Configure nodes** — Click any node to open the config panel. Fill in the type-specific form.
 4. **Set references** — Each node has a unique `ref` name (must match `^[a-zA-Z][a-zA-Z0-9_-]{0,127}$`).
 
-### Node types (31 transformations)
+### Node types (45 transformations)
 
 | Category | Types |
 |----------|-------|
@@ -95,7 +95,7 @@ Jobs follow the lifecycle: `queued` → `running` → `completed` | `failed` | `
 | **Quality** | Schema Enforce, Assertion |
 | **Advanced** | SQL, Repartition, Coalesce, SCD Type 2, Enrich, Custom |
 
-All 31 transformation types from the [Teckel Spec v2.0](https://github.com/eff3ct0/teckel-spec) are supported.
+All 45 transformation types from the [Teckel Spec v3.0](https://github.com/eff3ct0/teckel-spec) are supported.
 
 ### Variables and Secrets
 
@@ -130,7 +130,7 @@ Jobs are non-blocking — the server uses a bounded worker pool so you can submi
 ### YAML preview
 
 - Click the **YAML** button in the top bar (or press `Ctrl+E`) to toggle the YAML panel.
-- YAML is generated live as you edit, including `version: "2.0"`, pipeline metadata, secrets, and all spec sections.
+- YAML is generated live as you edit, including `version: "3.0"`, pipeline metadata, secrets, and all spec sections.
 - Toggle between **read-only** and **editable** mode.
 - Click **Copy** to copy to clipboard.
 
@@ -203,7 +203,7 @@ src/
 │   ├── api/                 Teckel server API client
 │   ├── nodes/               Node registry, Zod schemas, pipeline validator
 │   ├── utils/               cn(), nanoid()
-│   └── yaml/                YAML generator + parser (spec v2.0 compliant)
+│   └── yaml/                YAML generator + parser (spec v3.0 compliant)
 ├── stores/                  Zustand stores (pipeline, UI, connection, variables)
 └── types/                   TypeScript type definitions
 ```

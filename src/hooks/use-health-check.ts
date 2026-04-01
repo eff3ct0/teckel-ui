@@ -38,9 +38,13 @@ export function useHealthCheck(intervalMs: number = 15000) {
   }, [serverUrl, setConnected, setLastHealthCheck]);
 
   useEffect(() => {
-    checkHealth();
     const id = setInterval(checkHealth, intervalMs);
-    return () => clearInterval(id);
+    // Run first check after mount, not synchronously during effect
+    const initial = setTimeout(checkHealth, 0);
+    return () => {
+      clearInterval(id);
+      clearTimeout(initial);
+    };
   }, [checkHealth, intervalMs]);
 
   return { status, checkHealth, showReconnected };

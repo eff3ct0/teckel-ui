@@ -6,7 +6,7 @@ type ITextModel = Parameters<NonNullable<ProvideCompletionItems>>[0];
 type Position = Parameters<NonNullable<ProvideCompletionItems>>[1];
 
 // ---------------------------------------------------------------------------
-// Function catalogue – grouped by category (from teckel-spec v2.0 section 9.6)
+// Function catalogue – grouped by category (from teckel-spec v3.0 section 9.6)
 // ---------------------------------------------------------------------------
 
 interface FunctionDef {
@@ -111,7 +111,7 @@ export function registerTeckelLanguage(monaco: Monaco): void {
   monaco.languages.register({ id: "teckel" });
 
   // 2. Monarch tokenizer for syntax highlighting
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   monaco.languages.setMonarchTokensProvider("teckel", {
     ignoreCase: true,
 
@@ -156,7 +156,7 @@ export function registerTeckelLanguage(monaco: Monaco): void {
         [/[(),]/, "delimiter"],
       ],
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
   } as any);
 
   // 3. Completion provider

@@ -1831,13 +1831,13 @@ function MergeForm({ config, onChange }: FormProps) {
 
   const addClause = (key: string, clauses: unknown[]) => onChange({ [key]: [...clauses, { action: "update", condition: "", set: {}, star: false }] });
   const removeClause = (key: string, clauses: unknown[], i: number) => onChange({ [key]: (clauses as unknown[]).filter((_, idx) => idx !== i) });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const updateClause = (key: string, clauses: any[], i: number, field: string, value: unknown) => {
     const next = clauses.map((c, idx) => (idx === i ? { ...c, [field]: value } : c));
     onChange({ [key]: next });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const renderClauses = (label: string, key: string, clauses: any[]) => (
     <div>
       <Label>{label}</Label>

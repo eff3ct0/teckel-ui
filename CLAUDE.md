@@ -6,8 +6,8 @@ The official Teckel specification lives in a separate repository: **eff3ct0/teck
 
 When working on anything related to Teckel expressions, transformations, YAML structure, or the pipeline data model, you MUST consult the spec before making changes:
 
-- **Spec document**: `spec/v2.0/teckel-spec.md` in `eff3ct0/teckel-spec`
-- **JSON Schema**: `spec/v2.0/teckel-schema.json` in `eff3ct0/teckel-spec`
+- **Spec document**: `spec/v3.0/teckel-spec.md` in `eff3ct0/teckel-spec`
+- **JSON Schema**: `spec/v3.0/teckel-schema.json` in `eff3ct0/teckel-spec`
 
 Use the GitHub MCP tool (`mcp__github-eff3ct__get_file_contents`) to read these files directly from the repo. This ensures you always work with the latest version of the specification.
 

@@ -22,7 +22,7 @@ export interface PipelineMetadata {
 }
 
 /**
- * Extra top-level YAML sections from teckel-spec v2.0.
+ * Extra top-level YAML sections from teckel-spec v3.0.
  * Stored as raw objects for roundtrip fidelity.
  */
 export interface PipelineExtraSections {

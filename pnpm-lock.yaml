@@ -117,6 +117,9 @@ importers:
       '@connectrpc/protoc-gen-connect-es':
         specifier: ^1.7.0
         version: 1.7.0(@bufbuild/protoc-gen-es@1.10.1(@bufbuild/protobuf@1.10.1))(@connectrpc/connect@1.7.0(@bufbuild/protobuf@1.10.1))
+      '@eslint/eslintrc':
+        specifier: ^3.3.5
+        version: 3.3.5
       '@tailwindcss/postcss':
         specifier: ^4.1.4
         version: 4.2.2
