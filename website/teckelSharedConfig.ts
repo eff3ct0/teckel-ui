@@ -122,8 +122,9 @@ export function createTeckelConfig(options: TeckelConfigOptions): Config {
             position: 'left',
           },
           {
+            type: 'docSidebar',
+            sidebarId: 'docs',
             label: 'Editor',
-            href: 'https://teckel.rafaelfernandez.dev/ui/docs/intro',
             position: 'left',
           },
           {
