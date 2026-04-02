@@ -49,10 +49,10 @@
   <rect x="30" y="170" width="240" height="90" class="box"/>
   <text x="150" y="192" text-anchor="middle" class="title">YAML Engine</text>
   <rect x="42" y="202" width="105" height="20" class="box-accent"/><text x="94" y="217" text-anchor="middle" class="mono">generator.ts</text>
-  <text x="155" y="217" text-anchor="middle" class="mono">&rarr;</text>
+  <text x="155" y="217" text-anchor="middle" class="mono">→</text>
   <rect x="162" y="202" width="96" height="20" class="box-accent"/><text x="210" y="217" text-anchor="middle" class="mono">version:"3.0"</text>
   <rect x="42" y="228" width="105" height="20" class="box-accent"/><text x="94" y="243" text-anchor="middle" class="mono">parser.ts</text>
-  <text x="155" y="243" text-anchor="middle" class="mono">&larr;</text>
+  <text x="155" y="243" text-anchor="middle" class="mono">←</text>
   <rect x="162" y="228" width="96" height="20" class="box-accent"/><text x="210" y="243" text-anchor="middle" class="mono">import</text>
 
   <!-- Config Panel -->
@@ -110,7 +110,7 @@
   <!-- Job management -->
   <rect x="575" y="320" width="270" height="55" class="box"/>
   <text x="710" y="342" text-anchor="middle" class="title">Job Management</text>
-  <text x="710" y="362" text-anchor="middle" class="mono">queued &rarr; running &rarr; completed | failed | cancelled</text>
+  <text x="710" y="362" text-anchor="middle" class="mono">queued → running → completed | failed | cancelled</text>
 
   <!-- Right-zone vertical arrows -->
   <line x1="710" y1="105" x2="710" y2="120" class="arrow"/>

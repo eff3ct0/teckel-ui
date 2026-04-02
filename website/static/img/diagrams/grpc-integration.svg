@@ -62,7 +62,7 @@
   <rect x="600" y="50" width="130" height="120" class="box"/>
   <text x="665" y="73" text-anchor="middle" class="title">tonic-web</text>
   <rect x="612" y="88" width="106" height="22" class="box-accent"/><text x="665" y="104" text-anchor="middle" class="mono">gRPC-Web</text>
-  <text x="665" y="120" text-anchor="middle" class="mono">&darr;</text>
+  <text x="665" y="120" text-anchor="middle" class="mono">↓</text>
   <rect x="612" y="128" width="106" height="22" class="box-accent"/><text x="665" y="144" text-anchor="middle" class="mono">gRPC bridge</text>
 
   <!-- Arrow -->
