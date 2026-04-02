@@ -7,8 +7,7 @@ title: Introduction
 
 **Teckel Editor** is a visual pipeline editor for [Teckel](https://teckel.rafaelfernandez.dev/docs/intro). It provides a drag-and-drop canvas where you build data pipelines by connecting nodes, then exports valid Teckel YAML for execution by the [Teckel Engine](https://teckel.rafaelfernandez.dev/api/docs/intro).
 
-<!-- TODO: add screenshot -->
-<!-- ![Teckel Editor screenshot](./img/editor-screenshot.png) -->
+![Architecture](/img/diagrams/architecture.svg)
 
 ## Key features
 

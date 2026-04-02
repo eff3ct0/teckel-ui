@@ -7,6 +7,8 @@ title: Architecture
 
 Teckel Editor is a Next.js application that provides a visual pipeline editor backed by gRPC communication with the Teckel Engine.
 
+![Architecture](/img/diagrams/architecture.svg)
+
 ## Tech stack
 
 | Component | Technology | Version |
@@ -27,6 +29,8 @@ Teckel Editor is a Next.js application that provides a visual pipeline editor ba
 | Animations | Framer Motion | 12.x |
 
 ## State management (Zustand)
+
+![State management](/img/diagrams/state-management.svg)
 
 The application uses **5 Zustand stores** to manage state:
 

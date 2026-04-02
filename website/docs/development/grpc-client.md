@@ -7,6 +7,8 @@ title: gRPC Client
 
 Teckel Editor uses [ConnectRPC](https://connectrpc.com/) for gRPC-Web communication with the Teckel Engine backend.
 
+![gRPC integration](/img/diagrams/grpc-integration.svg)
+
 ## Proto definition
 
 The gRPC service is defined in the proto file at:

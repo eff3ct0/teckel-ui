@@ -7,6 +7,8 @@ title: YAML Round-Trip
 
 Teckel Editor supports **bidirectional conversion** between the visual graph and Teckel YAML. You can build a pipeline on the canvas and export it as YAML, or paste existing YAML and see it rendered as a graph.
 
+![YAML round-trip](/img/diagrams/yaml-roundtrip.svg)
+
 ## Visual to YAML
 
 The YAML generator (`src/lib/yaml/generator.ts`) converts the current graph state into valid Teckel YAML:

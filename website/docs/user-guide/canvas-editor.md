@@ -13,6 +13,8 @@ The left sidebar displays all available node types organized by category. Drag a
 
 ### Node categories
 
+![Node categories](/img/diagrams/node-categories.svg)
+
 | Category | Nodes | Count |
 |---|---|---|
 | **Sources** | `input` | 1 |

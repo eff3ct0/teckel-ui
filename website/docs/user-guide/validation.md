@@ -7,6 +7,8 @@ title: Validation
 
 Teckel Editor uses a **two-tier validation** system that provides both instant feedback and thorough server-side checking.
 
+![Validation flow](/img/diagrams/validation-flow.svg)
+
 ## Client-side validation (instant)
 
 Client-side validation runs immediately as you edit the pipeline. It catches common errors without requiring a backend connection:

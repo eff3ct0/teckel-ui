@@ -1,0 +1,120 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 420" fill="none">
+  <style>
+    text { font-family: 'Inter', 'Geist', system-ui, sans-serif; }
+    .title { font-size: 13px; fill: #09090b; font-weight: 600; }
+    .label { font-size: 10px; fill: #71717a; font-weight: 500; }
+    .mono { font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 9px; fill: #52525b; }
+    .zone-label { font-size: 9px; fill: #a1a1aa; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .box { stroke: #e4e4e7; stroke-width: 1; rx: 8; fill: white; }
+    .box-accent { stroke: #d4d4d8; stroke-width: 1; rx: 6; fill: #fafafa; }
+    .zone { stroke: #e4e4e7; stroke-width: 1; rx: 10; fill: none; stroke-dasharray: 5 3; }
+    .arrow { stroke: #a1a1aa; stroke-width: 1.2; marker-end: url(#arch-arr); }
+    .arrow-grpc { stroke: #09090b; stroke-width: 1.5; marker-end: url(#arch-arr-bold); }
+    .arrow-label { font-family: 'Geist Mono', monospace; font-size: 8px; fill: #09090b; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .title { fill: #fafafa; } .label { fill: #a1a1aa; } .mono { fill: #a1a1aa; }
+      .zone-label { fill: #71717a; }
+      .box { stroke: #27272a; fill: #18181b; } .box-accent { stroke: #3f3f46; fill: #27272a; }
+      .zone { stroke: #27272a; }
+      .arrow { stroke: #52525b; } .arrow-grpc { stroke: #fafafa; }
+      .arrow-label { fill: #fafafa; }
+    }
+  </style>
+  <defs>
+    <marker id="arch-arr" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="none" stroke="#a1a1aa" stroke-width="0.8"/></marker>
+    <marker id="arch-arr-bold" markerWidth="7" markerHeight="5" refX="6" refY="2.5" orient="auto"><path d="M0,0 L7,2.5 L0,5" fill="none" stroke="#09090b" stroke-width="1"/></marker>
+  </defs>
+
+  <!-- Left zone: Browser -->
+  <rect x="15" y="15" width="520" height="390" class="zone"/>
+  <text x="30" y="35" class="zone-label">Next.js 16 · React 19 · Browser</text>
+
+  <!-- React Flow Canvas -->
+  <rect x="30" y="50" width="240" height="100" class="box"/>
+  <text x="150" y="72" text-anchor="middle" class="title">React Flow Canvas</text>
+  <rect x="42" y="82" width="100" height="20" class="box-accent"/><text x="92" y="97" text-anchor="middle" class="mono">49 node types</text>
+  <rect x="150" y="82" width="108" height="20" class="box-accent"/><text x="204" y="97" text-anchor="middle" class="mono">drag-and-drop</text>
+  <rect x="42" y="108" width="216" height="20" class="box-accent"/><text x="150" y="123" text-anchor="middle" class="mono">Dagre auto-layout</text>
+
+  <!-- Zustand Stores -->
+  <rect x="285" y="50" width="235" height="100" class="box"/>
+  <text x="402" y="72" text-anchor="middle" class="title">Zustand Stores</text>
+  <rect x="297" y="82" width="62" height="18" class="box-accent"/><text x="328" y="95" text-anchor="middle" class="mono">pipeline</text>
+  <rect x="365" y="82" width="30" height="18" class="box-accent"/><text x="380" y="95" text-anchor="middle" class="mono">ui</text>
+  <rect x="401" y="82" width="62" height="18" class="box-accent"/><text x="432" y="95" text-anchor="middle" class="mono">connection</text>
+  <rect x="297" y="108" width="62" height="18" class="box-accent"/><text x="328" y="121" text-anchor="middle" class="mono">variables</text>
+  <rect x="365" y="108" width="50" height="18" class="box-accent"/><text x="390" y="121" text-anchor="middle" class="mono">theme</text>
+
+  <!-- YAML Engine -->
+  <rect x="30" y="170" width="240" height="90" class="box"/>
+  <text x="150" y="192" text-anchor="middle" class="title">YAML Engine</text>
+  <rect x="42" y="202" width="105" height="20" class="box-accent"/><text x="94" y="217" text-anchor="middle" class="mono">generator.ts</text>
+  <text x="155" y="217" text-anchor="middle" class="mono">&rarr;</text>
+  <rect x="162" y="202" width="96" height="20" class="box-accent"/><text x="210" y="217" text-anchor="middle" class="mono">version:"3.0"</text>
+  <rect x="42" y="228" width="105" height="20" class="box-accent"/><text x="94" y="243" text-anchor="middle" class="mono">parser.ts</text>
+  <text x="155" y="243" text-anchor="middle" class="mono">&larr;</text>
+  <rect x="162" y="228" width="96" height="20" class="box-accent"/><text x="210" y="243" text-anchor="middle" class="mono">import</text>
+
+  <!-- Config Panel -->
+  <rect x="285" y="170" width="235" height="90" class="box"/>
+  <text x="402" y="192" text-anchor="middle" class="title">Config Panel</text>
+  <rect x="297" y="202" width="100" height="20" class="box-accent"/><text x="347" y="217" text-anchor="middle" class="mono">Zod forms</text>
+  <rect x="405" y="202" width="100" height="20" class="box-accent"/><text x="455" y="217" text-anchor="middle" class="mono">Monaco editor</text>
+
+  <!-- ConnectRPC Client -->
+  <rect x="130" y="285" width="270" height="50" class="box"/>
+  <text x="265" y="310" text-anchor="middle" class="title">ConnectRPC Client</text>
+  <text x="265" y="326" text-anchor="middle" class="mono">gRPC-Web transport · protobuf encoding</text>
+
+  <!-- Arrows within left zone -->
+  <line x1="270" y1="100" x2="285" y2="100" class="arrow"/>
+  <line x1="150" y1="150" x2="150" y2="170" class="arrow"/>
+  <line x1="402" y1="150" x2="402" y2="170" class="arrow"/>
+  <line x1="150" y1="260" x2="200" y2="285" class="arrow"/>
+  <line x1="402" y1="260" x2="340" y2="285" class="arrow"/>
+
+  <!-- gRPC arrow to right zone -->
+  <line x1="400" y1="310" x2="560" y2="210" class="arrow-grpc"/>
+  <text x="490" y="245" text-anchor="middle" class="arrow-label">gRPC-Web</text>
+
+  <!-- Right zone: teckel-api -->
+  <rect x="555" y="15" width="310" height="390" class="zone"/>
+  <text x="570" y="35" class="zone-label">teckel-api · Rust</text>
+
+  <!-- teckel-worker -->
+  <rect x="575" y="50" width="270" height="55" class="box"/>
+  <text x="710" y="72" text-anchor="middle" class="title">teckel-worker</text>
+  <text x="710" y="92" text-anchor="middle" class="mono">Tonic gRPC :50051</text>
+
+  <!-- Validate / Explain -->
+  <rect x="575" y="120" width="125" height="45" class="box"/>
+  <text x="637" y="142" text-anchor="middle" class="title">Validate</text>
+  <text x="637" y="156" text-anchor="middle" class="mono">spec validation</text>
+
+  <rect x="720" y="120" width="125" height="45" class="box"/>
+  <text x="782" y="142" text-anchor="middle" class="title">Explain</text>
+  <text x="782" y="156" text-anchor="middle" class="mono">execution plan</text>
+
+  <!-- Execute Pipeline -->
+  <rect x="575" y="180" width="270" height="55" class="box"/>
+  <text x="710" y="202" text-anchor="middle" class="title">Execute Pipeline</text>
+  <text x="710" y="222" text-anchor="middle" class="mono">DAG wave-parallel execution</text>
+
+  <!-- Backend -->
+  <rect x="575" y="250" width="270" height="55" class="box"/>
+  <text x="710" y="272" text-anchor="middle" class="title">Backend Engines</text>
+  <rect x="587" y="280" width="75" height="18" class="box-accent"/><text x="624" y="293" text-anchor="middle" class="mono">DataFusion</text>
+  <rect x="670" y="280" width="55" height="18" class="box-accent"/><text x="697" y="293" text-anchor="middle" class="mono">Polars</text>
+  <rect x="733" y="280" width="55" height="18" class="box-accent"/><text x="760" y="293" text-anchor="middle" class="mono">Spark</text>
+
+  <!-- Job management -->
+  <rect x="575" y="320" width="270" height="55" class="box"/>
+  <text x="710" y="342" text-anchor="middle" class="title">Job Management</text>
+  <text x="710" y="362" text-anchor="middle" class="mono">queued &rarr; running &rarr; completed | failed | cancelled</text>
+
+  <!-- Right-zone vertical arrows -->
+  <line x1="710" y1="105" x2="710" y2="120" class="arrow"/>
+  <line x1="710" y1="165" x2="710" y2="180" class="arrow"/>
+  <line x1="710" y1="235" x2="710" y2="250" class="arrow"/>
+  <line x1="710" y1="305" x2="710" y2="320" class="arrow"/>
+</svg>
