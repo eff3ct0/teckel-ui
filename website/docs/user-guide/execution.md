@@ -20,12 +20,6 @@ Click the **Run** button in the topbar to submit the current pipeline. The edito
 
 Jobs progress through the following statuses:
 
-```
-queued --> running --> completed
-                  |-> failed
-                  |-> cancelled
-```
-
 | Status | Description |
 |---|---|
 | `queued` | Job accepted, waiting for execution |

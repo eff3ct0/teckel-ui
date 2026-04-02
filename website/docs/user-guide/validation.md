@@ -39,23 +39,3 @@ Validation errors are displayed in the **topbar** at the top of the editor:
 
 Node-level errors are also shown as badges on the affected nodes in the canvas.
 
-## Validation flow
-
-```
-User edits pipeline
-       |
-       v
-Client-side validation (instant)
-       |
-       v
-Zod schemas + cycle detection + ref format
-       |
-       v
-Generate YAML
-       |
-       v  (debounced 800ms)
-Server-side validation (gRPC ValidatePipeline)
-       |
-       v
-Display results in topbar + node badges
-```
