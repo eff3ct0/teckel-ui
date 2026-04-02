@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 320" fill="none">
+  <style>
+    text { font-family: 'Inter', 'Geist', system-ui, sans-serif; }
+    .title { font-size: 13px; fill: #09090b; font-weight: 600; }
+    .label { font-size: 11px; fill: #71717a; font-weight: 500; }
+    .mono { font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 10px; fill: #52525b; }
+    .file { font-family: 'Geist Mono', monospace; font-size: 9px; fill: #a1a1aa; }
+    .box { stroke: #e4e4e7; stroke-width: 1; rx: 8; fill: white; }
+    .box-accent { stroke: #d4d4d8; stroke-width: 1; rx: 6; fill: #fafafa; }
+    .store { stroke: #09090b; stroke-width: 1.5; rx: 10; fill: white; }
+    .arrow { stroke: #a1a1aa; stroke-width: 1; marker-end: url(#sma); }
+    .arrow-bi { stroke: #d4d4d8; stroke-width: 1; stroke-dasharray: 4 3; }
+    @media (prefers-color-scheme: dark) {
+      .title { fill: #fafafa; } .label { fill: #a1a1aa; } .mono { fill: #a1a1aa; } .file { fill: #71717a; }
+      .box { stroke: #27272a; fill: #18181b; } .box-accent { stroke: #3f3f46; fill: #27272a; }
+      .store { stroke: #fafafa; fill: #18181b; } .arrow { stroke: #52525b; } .arrow-bi { stroke: #3f3f46; }
+    }
+  </style>
+  <defs>
+    <marker id="sma" markerWidth="6" markerHeight="4" refX="5" refY="2" orient="auto"><path d="M0,0 L6,2 L0,4" fill="none" stroke="#a1a1aa" stroke-width="0.8"/></marker>
+  </defs>
+
+  <!-- pipeline-store (center, main) -->
+  <rect x="240" y="40" width="260" height="120" class="store"/>
+  <text x="370" y="65" text-anchor="middle" class="title">pipeline-store</text>
+  <text x="370" y="80" text-anchor="middle" class="file">stores/pipeline-store.ts</text>
+  <rect x="255" y="90" width="110" height="20" class="box-accent"/><text x="310" y="105" text-anchor="middle" class="mono">nodes / edges</text>
+  <rect x="375" y="90" width="110" height="20" class="box-accent"/><text x="430" y="105" text-anchor="middle" class="mono">undo / redo (50)</text>
+  <rect x="255" y="116" width="110" height="20" class="box-accent"/><text x="310" y="131" text-anchor="middle" class="mono">metadata</text>
+  <rect x="375" y="116" width="110" height="20" class="box-accent"/><text x="430" y="131" text-anchor="middle" class="mono">extra sections</text>
+
+  <!-- ui-store -->
+  <rect x="20" y="50" width="190" height="90" class="store"/>
+  <text x="115" y="75" text-anchor="middle" class="title">ui-store</text>
+  <text x="115" y="90" text-anchor="middle" class="file">stores/ui-store.ts</text>
+  <rect x="35" y="100" width="75" height="20" class="box-accent"/><text x="72" y="115" text-anchor="middle" class="mono">panels</text>
+  <rect x="120" y="100" width="75" height="20" class="box-accent"/><text x="157" y="115" text-anchor="middle" class="mono">selected</text>
+
+  <!-- connection-store -->
+  <rect x="530" y="50" width="190" height="90" class="store"/>
+  <text x="625" y="75" text-anchor="middle" class="title">connection-store</text>
+  <text x="625" y="90" text-anchor="middle" class="file">stores/connection-store.ts</text>
+  <rect x="545" y="100" width="75" height="20" class="box-accent"/><text x="582" y="115" text-anchor="middle" class="mono">serverUrl</text>
+  <rect x="630" y="100" width="75" height="20" class="box-accent"/><text x="667" y="115" text-anchor="middle" class="mono">connected</text>
+
+  <!-- variables-store -->
+  <rect x="100" y="200" width="200" height="80" class="store"/>
+  <text x="200" y="225" text-anchor="middle" class="title">variables-store</text>
+  <text x="200" y="240" text-anchor="middle" class="file">stores/variables-store.ts</text>
+  <rect x="115" y="250" width="80" height="18" class="box-accent"/><text x="155" y="263" text-anchor="middle" class="mono">${VAR}</text>
+  <rect x="205" y="250" width="80" height="18" class="box-accent"/><text x="245" y="263" text-anchor="middle" class="mono">{{secrets}}</text>
+
+  <!-- theme-store -->
+  <rect x="440" y="200" width="200" height="80" class="store"/>
+  <text x="540" y="225" text-anchor="middle" class="title">theme-store</text>
+  <text x="540" y="240" text-anchor="middle" class="file">stores/theme-store.ts</text>
+  <rect x="455" y="250" width="80" height="18" class="box-accent"/><text x="495" y="263" text-anchor="middle" class="mono">light/dark</text>
+  <rect x="545" y="250" width="80" height="18" class="box-accent"/><text x="585" y="263" text-anchor="middle" class="mono">persist</text>
+
+  <!-- Connections -->
+  <line x1="210" y1="95" x2="240" y2="95" class="arrow-bi"/>
+  <line x1="500" y1="95" x2="530" y2="95" class="arrow-bi"/>
+  <line x1="300" y1="160" x2="250" y2="200" class="arrow"/>
+  <line x1="440" y1="160" x2="490" y2="200" class="arrow"/>
+
+  <text x="370" y="308" text-anchor="middle" class="label">5 Zustand stores · localStorage persistence · 50-level undo history</text>
+</svg>

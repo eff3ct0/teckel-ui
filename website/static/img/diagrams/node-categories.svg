@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 400" fill="none">
+  <style>
+    text { font-family: 'Inter', 'Geist', system-ui, sans-serif; }
+    .title { font-size: 14px; fill: #09090b; font-weight: 600; }
+    .cat { font-size: 10px; fill: #71717a; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+    .count { font-size: 10px; fill: #a1a1aa; font-weight: 500; }
+    .mono { font-family: 'Geist Mono', 'JetBrains Mono', monospace; font-size: 9px; fill: #52525b; }
+    .box { stroke: #e4e4e7; stroke-width: 1; rx: 6; fill: white; }
+    .group { stroke: #e4e4e7; stroke-width: 1; rx: 8; fill: #fafafa; }
+    .src { stroke: #bbf7d0; fill: #f0fdf4; } .sink { stroke: #fecaca; fill: #fef2f2; }
+    @media (prefers-color-scheme: dark) {
+      .title { fill: #fafafa; } .cat { fill: #a1a1aa; } .count { fill: #71717a; } .mono { fill: #a1a1aa; }
+      .box { stroke: #27272a; fill: #18181b; } .group { stroke: #27272a; fill: #27272a; }
+      .src { stroke: #166534; fill: #052e16; } .sink { stroke: #991b1b; fill: #450a0a; }
+    }
+  </style>
+
+  <text x="390" y="25" text-anchor="middle" class="title">49 Node Types · 9 Categories</text>
+
+  <!-- Sources -->
+  <rect x="15" y="45" width="115" height="55" class="group src"/>
+  <text x="72" y="63" text-anchor="middle" class="cat">Sources</text>
+  <text x="72" y="78" text-anchor="middle" class="count">1 type</text>
+  <text x="72" y="92" text-anchor="middle" class="mono">input</text>
+
+  <!-- Sinks -->
+  <rect x="140" y="45" width="115" height="55" class="group sink"/>
+  <text x="197" y="63" text-anchor="middle" class="cat">Sinks</text>
+  <text x="197" y="78" text-anchor="middle" class="count">1 type</text>
+  <text x="197" y="92" text-anchor="middle" class="mono">output</text>
+
+  <!-- Column Ops -->
+  <rect x="265" y="45" width="240" height="55" class="group"/>
+  <text x="385" y="63" text-anchor="middle" class="cat">Column Operations</text>
+  <text x="385" y="78" text-anchor="middle" class="count">8 types</text>
+  <text x="385" y="92" text-anchor="middle" class="mono">select · addColumns · dropColumns · renameColumns · castColumns · fillNa · parse · replace</text>
+
+  <!-- Filtering -->
+  <rect x="515" y="45" width="250" height="55" class="group"/>
+  <text x="640" y="63" text-anchor="middle" class="cat">Filtering</text>
+  <text x="640" y="78" text-anchor="middle" class="count">9 types</text>
+  <text x="640" y="92" text-anchor="middle" class="mono">where · distinct · limit · sample · conditional · split · offset · tail · dropNa</text>
+
+  <!-- Aggregation -->
+  <rect x="15" y="115" width="355" height="55" class="group"/>
+  <text x="192" y="133" text-anchor="middle" class="cat">Aggregation &amp; Sorting</text>
+  <text x="192" y="148" text-anchor="middle" class="count">8 types</text>
+  <text x="192" y="162" text-anchor="middle" class="mono">groupBy · orderBy · window · rollup · cube · groupingSets · describe · crosstab</text>
+
+  <!-- Joins -->
+  <rect x="380" y="115" width="385" height="55" class="group"/>
+  <text x="572" y="133" text-anchor="middle" class="cat">Joins &amp; Set Operations</text>
+  <text x="572" y="148" text-anchor="middle" class="count">6 types</text>
+  <text x="572" y="162" text-anchor="middle" class="mono">join · union · intersect · except · asOfJoin · lateralJoin</text>
+
+  <!-- Reshaping -->
+  <rect x="15" y="185" width="230" height="55" class="group"/>
+  <text x="130" y="203" text-anchor="middle" class="cat">Reshaping</text>
+  <text x="130" y="218" text-anchor="middle" class="count">4 types</text>
+  <text x="130" y="232" text-anchor="middle" class="mono">pivot · unpivot · flatten · transpose</text>
+
+  <!-- Quality -->
+  <rect x="255" y="185" width="175" height="55" class="group"/>
+  <text x="342" y="203" text-anchor="middle" class="cat">Quality</text>
+  <text x="342" y="218" text-anchor="middle" class="count">2 types</text>
+  <text x="342" y="232" text-anchor="middle" class="mono">schemaEnforce · assertion</text>
+
+  <!-- Advanced -->
+  <rect x="440" y="185" width="325" height="55" class="group"/>
+  <text x="602" y="203" text-anchor="middle" class="cat">Advanced</text>
+  <text x="602" y="218" text-anchor="middle" class="count">10 types</text>
+  <text x="602" y="232" text-anchor="middle" class="mono">sql · repartition · coalesce · scd2 · enrich · custom · merge · hint · ...</text>
+
+  <!-- Visual representation -->
+  <text x="390" y="280" text-anchor="middle" class="cat">Drag from palette → Drop on canvas → Configure → Connect</text>
+</svg>
