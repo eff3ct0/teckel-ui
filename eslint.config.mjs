@@ -1,5 +1,10 @@
 import nextConfig from "eslint-config-next";
 
-const eslintConfig = [...nextConfig];
+const eslintConfig = [
+  ...nextConfig,
+  {
+    ignores: ["website/**"],
+  },
+];
 
 export default eslintConfig;
