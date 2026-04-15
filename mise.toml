@@ -1,2 +1,4 @@
 [tools]
+fly = "latest"
 node = "latest"
+vercel = "latest"

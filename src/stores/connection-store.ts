@@ -22,7 +22,7 @@ interface ConnectionState {
 export const useConnectionStore = create<ConnectionState>()(
   persist(
     (set) => ({
-      serverUrl: "http://localhost:50051",
+      serverUrl: process.env.NEXT_PUBLIC_TECKEL_SERVER_URL ?? "http://localhost:50051",
       autoValidate: true,
       connected: false,
       lastHealthCheck: null,
