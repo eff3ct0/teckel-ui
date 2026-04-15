@@ -7,7 +7,9 @@ import { NodePalette } from "@/components/palette/node-palette";
 import { PipelineCanvas } from "@/components/canvas/pipeline-canvas";
 import { ConfigPanel } from "@/components/config/config-panel";
 import { YamlPanel } from "@/components/yaml/yaml-panel";
+import { TutorialOverlay } from "@/components/tutorial/tutorial-overlay";
 import { useUIStore } from "@/stores/ui-store";
+import { useTutorialStore } from "@/stores/tutorial-store";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useYamlSync } from "@/hooks/use-yaml-sync";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
@@ -27,6 +29,11 @@ export function PipelineEditor() {
   const edges = usePipelineStore((s) => s.edges);
   const setNodeValidationErrors = usePipelineStore((s) => s.setNodeValidationErrors);
   const setNodeResolvedTags = usePipelineStore((s) => s.setNodeResolvedTags);
+
+  useEffect(() => {
+    const s = useTutorialStore.getState();
+    if (!s.hasSeenTutorial && !s.isOpen) s.open();
+  }, []);
 
   // Push per-node validation errors into node data
   const { nodeErrors } = useValidation();
@@ -95,6 +102,8 @@ export function PipelineEditor() {
           {/* Config Panel - Right sidebar */}
           <ConfigPanel />
         </div>
+
+        <TutorialOverlay />
       </div>
     </ReactFlowProvider>
   );

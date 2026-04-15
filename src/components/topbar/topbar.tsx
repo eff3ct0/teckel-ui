@@ -39,8 +39,10 @@ import {
   Brain,
   Clock,
   LayoutTemplate,
+  HelpCircle,
 } from "lucide-react";
 import { TemplateGallery } from "@/components/templates/template-gallery";
+import { useTutorialStore } from "@/stores/tutorial-store";
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -227,6 +229,13 @@ export function TopBar() {
           title="Save"
         >
           <Save className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => useTutorialStore.getState().open()}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--muted-foreground)] transition-colors hover:bg-[var(--secondary)] hover:text-[var(--foreground)]"
+          title="Show tutorial"
+        >
+          <HelpCircle className="h-4 w-4" />
         </button>
         <button
           onClick={toggleTheme}
