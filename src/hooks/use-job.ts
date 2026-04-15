@@ -37,6 +37,7 @@ function isTerminal(status: JobStatus): boolean {
 export function useJob() {
   const yaml = usePipelineStore((s) => s.yaml);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
+  const backend = useConnectionStore((s) => s.backend);
   const variables = useVariablesStore((s) => s.variables);
 
   const [job, setJob] = useState<JobState>(INITIAL_STATE);
@@ -87,7 +88,7 @@ export function useJob() {
 
     try {
       const client = createTeckelClient(serverUrl);
-      const resp = await client.submitJob(yaml, variables);
+      const resp = await client.submitJob(yaml, variables, backend);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -149,7 +150,7 @@ export function useJob() {
         error: e instanceof Error ? e.message : "Unknown error",
       });
     }
-  }, [yaml, serverUrl, variables, abortWait, stopTimer, startTimer]);
+  }, [yaml, serverUrl, backend, variables, abortWait, stopTimer, startTimer]);
 
   const cancelJob = useCallback(async () => {
     if (!job.jobId) return;

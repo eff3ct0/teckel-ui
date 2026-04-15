@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type Backend = "datafusion" | "polars";
+export type Backend = "datafusion" | "polars" | "spark";
 
 interface ConnectionState {
   serverUrl: string;

@@ -72,10 +72,12 @@ export function createTeckelClient(baseUrl: string) {
     async validate(
       yaml: string,
       variables?: Record<string, string>,
+      backend?: string,
     ): Promise<ValidateResponse> {
       const res = await client.validatePipeline({
         yaml,
         variables: variables || {},
+        backend: backend || "",
       });
       return {
         valid: res.valid,
@@ -86,10 +88,12 @@ export function createTeckelClient(baseUrl: string) {
     async explain(
       yaml: string,
       variables?: Record<string, string>,
+      backend?: string,
     ): Promise<ExplainResponse> {
       const res = await client.explainPipeline({
         yaml,
         variables: variables || {},
+        backend: backend || "",
       });
       return { plan: res.plan };
     },
@@ -97,10 +101,12 @@ export function createTeckelClient(baseUrl: string) {
     async submitJob(
       yaml: string,
       variables?: Record<string, string>,
+      backend?: string,
     ): Promise<SubmitJobResponse> {
       const res = await client.submitJob({
         yaml,
         variables: variables || {},
+        backend: backend || "",
       });
       return { job_id: res.jobId, status: res.status };
     },

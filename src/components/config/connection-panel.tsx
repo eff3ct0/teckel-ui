@@ -124,11 +124,14 @@ export function ConnectionPanel() {
         >
           <option value="datafusion">DataFusion</option>
           <option value="polars">Polars</option>
+          <option value="spark">Spark</option>
         </select>
         <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
           {backend === "datafusion"
             ? "Full feature support (31/31 transforms), SQL-compatible"
-            : "Faster for batch workloads (28/31 transforms)"}
+            : backend === "polars"
+              ? "Faster for batch workloads (28/31 transforms)"
+              : "Distributed execution via Spark Connect (requires SPARK_CONNECT_URL on the server)"}
         </p>
       </div>
 

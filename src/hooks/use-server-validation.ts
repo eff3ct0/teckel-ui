@@ -22,6 +22,7 @@ export function useServerValidation(): ServerValidation {
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const autoValidate = useConnectionStore((s) => s.autoValidate);
   const connected = useConnectionStore((s) => s.connected);
+  const backend = useConnectionStore((s) => s.backend);
   const variables = useVariablesStore((s) => s.variables);
 
   const [valid, setValid] = useState<boolean | null>(null);
@@ -42,7 +43,7 @@ export function useServerValidation(): ServerValidation {
       setLoading(true);
       try {
         const client = createTeckelClient(serverUrl);
-        const result = await client.validate(yaml, variables);
+        const result = await client.validate(yaml, variables, backend);
         setValid(result.valid);
         setError(result.error || null);
       } catch {
@@ -56,7 +57,7 @@ export function useServerValidation(): ServerValidation {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [yaml, serverUrl, autoValidate, connected, variables]);
+  }, [yaml, serverUrl, autoValidate, connected, variables, backend]);
 
   return { valid, error, loading };
 }

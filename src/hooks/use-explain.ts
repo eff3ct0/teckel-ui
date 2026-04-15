@@ -13,6 +13,7 @@ export function useExplain() {
   const [error, setError] = useState<string | null>(null);
 
   const serverUrl = useConnectionStore((s) => s.serverUrl);
+  const backend = useConnectionStore((s) => s.backend);
   const yaml = usePipelineStore((s) => s.yaml);
   const variables = useVariablesStore((s) => s.variables);
 
@@ -21,14 +22,14 @@ export function useExplain() {
     setError(null);
     try {
       const client = createTeckelClient(serverUrl);
-      const result = await client.explain(yaml, variables);
+      const result = await client.explain(yaml, variables, backend);
       setPlan(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Explain failed");
     } finally {
       setLoading(false);
     }
-  }, [serverUrl, yaml, variables]);
+  }, [serverUrl, yaml, variables, backend]);
 
   const reset = useCallback(() => {
     setPlan(null);
