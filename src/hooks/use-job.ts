@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
-import { useConnectionStore } from "@/stores/connection-store";
+import { buildBackendOptions, useConnectionStore } from "@/stores/connection-store";
 import { useVariablesStore } from "@/stores/variables-store";
 import { createTeckelClient, type JobStatus } from "@/lib/api/teckel-client";
 
@@ -38,6 +38,7 @@ export function useJob() {
   const yaml = usePipelineStore((s) => s.yaml);
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const backend = useConnectionStore((s) => s.backend);
+  const sparkConnectUrl = useConnectionStore((s) => s.sparkConnectUrl);
   const variables = useVariablesStore((s) => s.variables);
 
   const [job, setJob] = useState<JobState>(INITIAL_STATE);
@@ -88,7 +89,8 @@ export function useJob() {
 
     try {
       const client = createTeckelClient(serverUrl);
-      const resp = await client.submitJob(yaml, variables, backend);
+      const options = buildBackendOptions(useConnectionStore.getState());
+      const resp = await client.submitJob(yaml, variables, backend, options);
 
       const controller = new AbortController();
       abortRef.current = controller;
@@ -150,7 +152,7 @@ export function useJob() {
         error: e instanceof Error ? e.message : "Unknown error",
       });
     }
-  }, [yaml, serverUrl, backend, variables, abortWait, stopTimer, startTimer]);
+  }, [yaml, serverUrl, backend, sparkConnectUrl, variables, abortWait, stopTimer, startTimer]);
 
   const cancelJob = useCallback(async () => {
     if (!job.jobId) return;

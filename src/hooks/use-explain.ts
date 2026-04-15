@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { createTeckelClient } from "@/lib/api/teckel-client";
-import { useConnectionStore } from "@/stores/connection-store";
+import { buildBackendOptions, useConnectionStore } from "@/stores/connection-store";
 import { usePipelineStore } from "@/stores/pipeline-store";
 import { useVariablesStore } from "@/stores/variables-store";
 import type { ExplainResponse } from "@/lib/api/teckel-client";
@@ -14,6 +14,7 @@ export function useExplain() {
 
   const serverUrl = useConnectionStore((s) => s.serverUrl);
   const backend = useConnectionStore((s) => s.backend);
+  const sparkConnectUrl = useConnectionStore((s) => s.sparkConnectUrl);
   const yaml = usePipelineStore((s) => s.yaml);
   const variables = useVariablesStore((s) => s.variables);
 
@@ -22,14 +23,15 @@ export function useExplain() {
     setError(null);
     try {
       const client = createTeckelClient(serverUrl);
-      const result = await client.explain(yaml, variables, backend);
+      const options = buildBackendOptions(useConnectionStore.getState());
+      const result = await client.explain(yaml, variables, backend, options);
       setPlan(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Explain failed");
     } finally {
       setLoading(false);
     }
-  }, [serverUrl, yaml, variables, backend]);
+  }, [serverUrl, yaml, variables, backend, sparkConnectUrl]);
 
   const reset = useCallback(() => {
     setPlan(null);

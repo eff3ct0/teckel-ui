@@ -16,6 +16,8 @@ export function ConnectionPanel() {
   const setLastHealthCheck = useConnectionStore((s) => s.setLastHealthCheck);
   const backend = useConnectionStore((s) => s.backend);
   const setBackend = useConnectionStore((s) => s.setBackend);
+  const sparkConnectUrl = useConnectionStore((s) => s.sparkConnectUrl);
+  const setSparkConnectUrl = useConnectionStore((s) => s.setSparkConnectUrl);
 
   const [testing, setTesting] = useState(false);
   const [serverVersion, setServerVersion] = useState<string | null>(null);
@@ -131,9 +133,28 @@ export function ConnectionPanel() {
             ? "Full feature support (31/31 transforms), SQL-compatible"
             : backend === "polars"
               ? "Faster for batch workloads (28/31 transforms)"
-              : "Distributed execution via Spark Connect (requires SPARK_CONNECT_URL on the server)"}
+              : "Distributed execution via Spark Connect"}
         </p>
       </div>
+
+      {/* Spark Connect URL (only when backend is spark) */}
+      {backend === "spark" && (
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-[var(--muted-foreground)]">
+            Spark Connect URL
+          </label>
+          <input
+            type="text"
+            value={sparkConnectUrl}
+            onChange={(e) => setSparkConnectUrl(e.target.value)}
+            placeholder="sc://host:15002/"
+            className="h-8 w-full rounded-md border border-[var(--border)] bg-[var(--background)] px-2.5 text-xs text-[var(--foreground)] transition-colors focus:border-[var(--primary)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/30"
+          />
+          <p className="mt-1 text-[10px] text-[var(--muted-foreground)]">
+            Address of the Spark Connect server. Leave empty to use the server-side default.
+          </p>
+        </div>
+      )}
 
       {/* Auto-validate toggle */}
       <div>

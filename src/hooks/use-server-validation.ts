@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { usePipelineStore } from "@/stores/pipeline-store";
-import { useConnectionStore } from "@/stores/connection-store";
+import { buildBackendOptions, useConnectionStore } from "@/stores/connection-store";
 import { useVariablesStore } from "@/stores/variables-store";
 import { createTeckelClient } from "@/lib/api/teckel-client";
 
@@ -23,6 +23,7 @@ export function useServerValidation(): ServerValidation {
   const autoValidate = useConnectionStore((s) => s.autoValidate);
   const connected = useConnectionStore((s) => s.connected);
   const backend = useConnectionStore((s) => s.backend);
+  const sparkConnectUrl = useConnectionStore((s) => s.sparkConnectUrl);
   const variables = useVariablesStore((s) => s.variables);
 
   const [valid, setValid] = useState<boolean | null>(null);
@@ -43,7 +44,8 @@ export function useServerValidation(): ServerValidation {
       setLoading(true);
       try {
         const client = createTeckelClient(serverUrl);
-        const result = await client.validate(yaml, variables, backend);
+        const options = buildBackendOptions(useConnectionStore.getState());
+        const result = await client.validate(yaml, variables, backend, options);
         setValid(result.valid);
         setError(result.error || null);
       } catch {
@@ -57,7 +59,7 @@ export function useServerValidation(): ServerValidation {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [yaml, serverUrl, autoValidate, connected, variables, backend]);
+  }, [yaml, serverUrl, autoValidate, connected, variables, backend, sparkConnectUrl]);
 
   return { valid, error, loading };
 }
